@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\ViralLoadController;
+use App\Http\Controllers\EACController;
 
 // Show login form
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -16,8 +17,10 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/logout', [AuthController::class, 'logout']);
 
 // Dashboard route
-Route::get('/dashboard', [DashboardController::class, 'index']); // Added missing semicolon
+Route::get('/dashboard', [DashboardController::class, 'index']);
 
+Route::get('/eac', [EACController::class, 'index'])->middleware('auth');// Added missing semicolon
+Route::post('/eac/{id}/complete', [EACController::class, 'complete'])->middleware('auth');
 // Group all patient routes under auth middleware
 Route::middleware('auth')->group(function () {
     // Patients routes

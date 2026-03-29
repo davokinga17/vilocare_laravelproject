@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ViralLoad;
 use App\Models\Patient;
+use App\Models\EACSession;
 
 class ViralLoadController extends Controller
 {
     public function index()
     {
         $results = ViralLoad::with('patient')->orderBy('sample_date', 'desc')->get();
-        
+
         return view('viral_load.index', compact('results'));
     }
 
@@ -22,14 +23,30 @@ class ViralLoadController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'patient_id' => 'required',
-            'result_cpml' => 'required|numeric'
-        ]);
+{
+    $request->validate([
+        'patient_id' => 'required',
+        'result_cpml' => 'required|numeric'
+    ]);
 
-        ViralLoad::create($request->all());
+    $vl = ViralLoad::create($request->all());
 
-        return redirect('/viral-load')->with('success', 'Viral Load recorded');
+    // 🔥 EAC TRIGGER LOGIC
+    if ($request->result_cpml >= 1000) {
+
+        // Check if patient already has EAC started
+        $exists = EACSession::where('patient_id', $request->patient_id)->exists();
+
+        if (!$exists) {
+            EACSession::create([
+                'patient_id' => $request->patient_id,
+                'session_number' => 1,
+                'session_date' => now(),
+                'completion_status' => 'Pending'
+            ]);
+        }
     }
+
+    return redirect('/viral-load')->with('success', 'Viral Load recorded');
+}
 }

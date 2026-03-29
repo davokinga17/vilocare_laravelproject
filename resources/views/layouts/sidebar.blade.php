@@ -17,7 +17,7 @@
         </li>
 
         <li class="nav-item">
-            <a href="#" class="nav-link text-white">💬 EAC Sessions</a>
+            <a href="/eac" class="nav-link text-white">💬 EAC Sessions</a>
         </li>
 
         <li class="nav-item">
