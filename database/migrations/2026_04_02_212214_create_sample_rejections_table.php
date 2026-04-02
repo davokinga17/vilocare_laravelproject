@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('viral_load_results', function (Blueprint $table) {
-             $table->timestamps();
+        Schema::create('sample_rejections', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('patient_id');
+            $table->date('rejection_date');
+            $table->text('reason')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -21,8 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('viral_load_results', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('sample_rejections');
     }
 };

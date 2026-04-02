@@ -30,8 +30,8 @@ class PatientController extends Controller
             $query->where('age_category', $request->age_category);
         }
 
-        // Retrieve filtered patients
-        $patients = $query->get();
+        // Retrieve filtered patients with pagination
+        $patients = $query->paginate(10)->appends($request->query());
 
         // Pass patients and current filters to the view for display
         return view('patients.index', [

@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('patients', function (Blueprint $table) {
-        $table->timestamps(); // adds created_at and updated_at
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('username')->unique()->after('name');
+            $table->string('role')->after('username');
+            $table->string('contact')->nullable()->after('role');
         });
     }
 
@@ -21,8 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('patients', function (Blueprint $table) {
-            //
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn(['username', 'role', 'contact']);
         });
     }
 };

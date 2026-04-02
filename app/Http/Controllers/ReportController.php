@@ -10,6 +10,12 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
+    // Reports index
+    public function index()
+    {
+        return view('reports.index');
+    }
+
     // 🔷 PATIENT PDF
     public function patientsPDF()
     {

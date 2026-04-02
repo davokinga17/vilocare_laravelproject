@@ -5,9 +5,8 @@
 <h2>Patients</h2>
 
 <!-- Add Patient Button & Reports -->
-<a href="/patients/create" class="btn btn-primary mb-3">Add Patient</a>
-<a href="/reports/patients/pdf" class="btn btn-danger">Download PDF</a>
-<a href="/reports/patients/excel" class="btn btn-success">Download Excel</a>
+<a href="{{ route('patients.create') }}" class="btn btn-primary mb-3">Add Patient</a>
+<a href="{{ route('reports.index') }}" class="btn btn-info mb-3">View Reports</a>
 
 <!-- Filters Form -->
 <form method="GET" action="/patients" class="mb-3">

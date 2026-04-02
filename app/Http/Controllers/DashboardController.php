@@ -117,6 +117,15 @@ class DashboardController extends Controller
             $missedAppointments = 0;
         }
 
+        // Viral load suppression breakdown
+        try {
+            $suppressed = ViralLoad::where('result_cpml', '<', 1000)->count();
+            $unsuppressed = ViralLoad::where('result_cpml', '>=', 1000)->count();
+        } catch (\Exception $e) {
+            $suppressed = 0;
+            $unsuppressed = 0;
+        }
+
         // EAC: completed and ongoing
         try {
             $completedEAC = EACSession::where('completion_status', 'Completed')->count();
@@ -128,6 +137,11 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             $ongoingEAC = 0;
         }
+
+        // Align names used in view
+        $scheduled = $scheduledAppointments;
+        $completed = $completedAppointments;
+        $missed = $missedAppointments;
 
         return view('dashboard', compact(
             // Existing metrics
@@ -149,7 +163,14 @@ class DashboardController extends Controller
             // Additional metrics
             'highVL',
             'dueEAC',
-            'repeatVL'
+            'repeatVL',
+
+            // Chart variables
+            'scheduled',
+            'completed',
+            'missed',
+            'suppressed',
+            'unsuppressed'
         ));
     }
 }
