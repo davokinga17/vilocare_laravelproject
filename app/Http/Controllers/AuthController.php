@@ -6,8 +6,12 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 
+
 class AuthController extends Controller
 {
+
+    protected $redirectTo = '/dashboard';
+
     public function showLogin()
     {
         return view('login');
@@ -27,7 +31,7 @@ class AuthController extends Controller
 
         if ($user && Hash::check($request->password, $user->password)) {
             Auth::login($user);
-            return redirect('/dashboard');
+            return redirect($this->redirectTo);
         }
 
         return back()->with('error', 'Invalid credentials');

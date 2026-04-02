@@ -10,7 +10,8 @@
     .login-container { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); height: 100vh; display: flex; align-items: center; justify-content: center; }
     .login-card { background: white; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); width: 100%; max-width: 420px; padding: 2rem; }
     .login-logo { text-align: center; margin-bottom: 2rem; }
-    .login-logo img { height: 80px; }
+    /* Make the logo responsive */
+    .login-logo img { width: 150px; max-width: 100%; height: auto; }
     .btn-primary { background-color: #2563eb; border-color: #2563eb; }
     .btn-primary:hover { background-color: #1d4ed8; border-color: #1d4ed8; }
   </style>
@@ -19,7 +20,7 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-logo">
-        <img src="vilocarelogo.png" alt="ViLoCare Logo" class="img-fluid" style="max-height: 80px;" />
+        <img src="{{ asset('images/vilocarelogo.png') }}" alt="ViLoCare Logo" />
         <p class="text-muted mb-3" style="font-size: 1rem;">HIV Patient Viral Load Management System</p>
       </div>
       

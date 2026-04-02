@@ -5,6 +5,8 @@
 <h3>Viral Load Results</h3>
 
 <a href="/viral-load/create" class="btn btn-primary mb-3">Add Result</a>
+<a href="/reports/viral-load/pdf" class="btn btn-danger">Download PDF</a>
+<a href="/reports/viral-load/excel" class="btn btn-success">Download Excel</a>
 
 <table class="table table-bordered">
     <thead>

@@ -9,15 +9,37 @@ class PatientController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->search;
+        $query = \App\Models\Patient::query();
 
-        $patients = Patient::when($search, function ($query) use ($search) {
-            $query->where('first_name', 'like', "%$search%")
-                  ->orWhere('last_name', 'like', "%$search%")
-                  ->orWhere('art_number', 'like', "%$search%");
-        })->paginate(10);
+        // 🔍 Search
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('first_name', 'like', '%' . $request->search . '%')
+                  ->orWhere('last_name', 'like', '%' . $request->search . '%')
+                  ->orWhere('art_number', 'like', '%' . $request->search . '%');
+            });
+        }
 
-        return view('patients.index', compact('patients', 'search'));
+        // 🔽 Filter by sex
+        if ($request->sex) {
+            $query->where('sex', $request->sex);
+        }
+
+        // 🔽 Filter by age category
+        if ($request->age_category) {
+            $query->where('age_category', $request->age_category);
+        }
+
+        // Retrieve filtered patients
+        $patients = $query->get();
+
+        // Pass patients and current filters to the view for display
+        return view('patients.index', [
+            'patients' => $patients,
+            'search' => $request->search,
+            'sex' => $request->sex,
+            'age_category' => $request->age_category,
+        ]);
     }
 
     public function create()
@@ -38,7 +60,7 @@ class PatientController extends Controller
         ]);
 
         // Create a new patient record
-        Patient::create($request->only(['art_number', 'first_name', 'last_name', 'sex', 'phone']));
+        Patient::create($request->only(['art_number', 'first_name', 'last_name', 'sex', 'phone', 'age_category']));
 
         return redirect('/patients')->with('success', 'Patient added successfully');
     }
@@ -64,13 +86,14 @@ class PatientController extends Controller
             'last_name' => 'required',
             'sex' => 'required|string',
             'phone' => 'nullable|string',
+            'age_category' => 'nullable|string',
         ]);
 
         // Find the patient by ID
         $patient = Patient::findOrFail($id);
 
         // Update patient data
-        $patient->update($request->only(['art_number', 'first_name', 'last_name', 'sex', 'phone']));
+        $patient->update($request->only(['art_number', 'first_name', 'last_name', 'sex', 'phone', 'age_category']));
 
         return redirect('/patients')->with('success', 'Patient updated successfully');
     }
