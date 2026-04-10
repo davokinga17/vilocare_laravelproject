@@ -1,62 +1,74 @@
-@php
+﻿@php
     $role = auth()->user()->role;
 @endphp
 
-<div class="bg-primary text-white p-3" style="width:250px; min-height:100vh;">
-    <h4>ViLoCare</h4>
-    <p class="small">HIV VL Management</p>
+<aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-head">
+        <div class="sidebar-logo-wrap">
+            <span class="sidebar-logo">
+                <img src="{{ asset('images/vilocarelogo.png') }}" alt="ViLoCare Logo" />
+            </span>
+            <div class="sidebar-brand">
+                <p class="sidebar-brand-title">ViLoCare</p>
+                <p class="sidebar-brand-sub">HIV Viral Load Platform</p>
+            </div>
+        </div>
+    </div>
 
-    <ul class="nav flex-column mt-4">
+    <nav class="sidebar-menu">
+        <p class="sidebar-section">Overview</p>
 
-        {{-- Dashboard - accessible to all authenticated users --}}
-        <li class="nav-item">
-            <a href="/dashboard" class="nav-link text-white">🏠 Dashboard</a>
-        </li>
+        <a href="/dashboard" class="sidebar-link {{ request()->is('dashboard') ? 'is-active' : '' }}">
+            <span class="sidebar-icon">DB</span>
+            Dashboard
+        </a>
 
-        {{-- Patients --}}
-        @if(in_array($role, ['Administrator', 'Clinician', 'Data Clerk']))
-        <li class="nav-item">
-            <a href="/patients" class="nav-link text-white">👥 Patients</a>
-        </li>
+        <p class="sidebar-section">Clinical</p>
+
+        @if(in_array($role, ['Administrator', 'Clinician', 'Data Clerk', 'Data Officer']))
+            <a href="/patients" class="sidebar-link {{ request()->is('patients') || request()->is('patients/*') ? 'is-active' : '' }}">
+                <span class="sidebar-icon">PT</span>
+                Patients
+            </a>
         @endif
 
-        {{-- Add Patient --}}
-        @if(in_array($role, ['Administrator', 'Data Clerk']))
-        <li class="nav-item">
-            <a href="/patients/create" class="nav-link text-white">➕ Add Patient</a>
-        </li>
+        @if(in_array($role, ['Administrator', 'Data Clerk', 'Data Officer']))
+            <a href="/patients/create" class="sidebar-link {{ request()->is('patients/create') ? 'is-active' : '' }}">
+                <span class="sidebar-icon">AP</span>
+                Add Patient
+            </a>
         @endif
 
-        {{-- Viral Load --}}
         @if(in_array($role, ['Administrator', 'Clinician', 'Lab Technician']))
-        <li class="nav-item">
-            <a href="/viral-load" class="nav-link text-white">🧪 Viral Load</a>
-        </li>
+            <a href="/viral-load" class="sidebar-link {{ request()->is('viral-load') || request()->is('viral-load/*') ? 'is-active' : '' }}">
+                <span class="sidebar-icon">VL</span>
+                Viral Load
+            </a>
         @endif
 
-        {{-- EAC Sessions --}}
         @if(in_array($role, ['Administrator', 'Clinician']))
-        <li class="nav-item">
-            <a href="/eac" class="nav-link text-white">💬 EAC Sessions</a>
-        </li>
+            <a href="/eac" class="sidebar-link {{ request()->is('eac') || request()->is('eac/*') ? 'is-active' : '' }}">
+                <span class="sidebar-icon">EA</span>
+                EAC Sessions
+            </a>
         @endif
 
-        {{-- Appointments for Admin and Data Clerk --}}
-        @if(in_array($role, ['Administrator', 'Data Clerk']))
-        <li class="nav-item">
-            <a href="/appointments" class="nav-link text-white">📅 Appointments</a>
-        </li>
+        @if(in_array($role, ['Administrator', 'Data Clerk', 'Data Officer']))
+            <a href="/appointments" class="sidebar-link {{ request()->is('appointments') || request()->is('appointments/*') ? 'is-active' : '' }}">
+                <span class="sidebar-icon">AM</span>
+                Appointments
+            </a>
         @endif
 
-        {{-- Samples --}}
-        <li class="nav-item">
-            <a href="#" class="nav-link text-white">🔬 Samples</a>
-        </li>
+        <p class="sidebar-section">Insights</p>
 
-        {{-- Reports --}}
-        <li class="nav-item">
-            <a href="#" class="nav-link text-white">📈 Reports</a>
-        </li>
+        <a href="/reports" class="sidebar-link {{ request()->is('reports') || request()->is('reports/*') ? 'is-active' : '' }}">
+            <span class="sidebar-icon">RP</span>
+            Reports
+        </a>
+    </nav>
 
-    </ul>
-</div>
+    <div class="sidebar-footer">
+        Signed in as {{ $role }}
+    </div>
+</aside>

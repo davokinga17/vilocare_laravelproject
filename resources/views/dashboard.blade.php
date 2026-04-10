@@ -1,139 +1,170 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
+
+@section('page_title', 'Dashboard')
+
+@push('styles')
+    <link href="{{ asset('css/dashboard.css') }}" rel="stylesheet" />
+@endpush
 
 @section('content')
 
-<h2>Dashboard</h2>
+<div class="dashboard-head">
+    <div>
+        <h2 class="dashboard-title">Care Performance Overview</h2>
+        <p class="dashboard-copy">A live snapshot of patient outcomes, follow-up activity, and laboratory workflow.</p>
+    </div>
+    <span class="status-pill">Updated today</span>
+</div>
 
-<!-- Summary Cards -->
-<div class="row">
-    <div class="col-md-3">
-        <div class="card p-3">
-            <h5>Total Patients</h5>
-            <h3>{{ $totalPatients }}</h3>
-        </div>
+<div class="kpi-grid">
+    <div class="kpi-card kpi-accent">
+        <p class="kpi-label">Total Patients</p>
+        <p class="kpi-value">{{ $totalPatients }}</p>
+        <p class="kpi-trend">Active across care pathways</p>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3">
-            <h5>Appointments Today</h5>
-            <h3>{{ $totalAppointmentsToday }}</h3>
-        </div>
+    <div class="kpi-card kpi-info">
+        <p class="kpi-label">Appointments Today</p>
+        <p class="kpi-value">{{ $totalAppointmentsToday }}</p>
+        <p class="kpi-trend">Scheduled for current date</p>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3">
-            <h5>Samples Collected</h5>
-            <h3>{{ $totalSamplesCollected }}</h3>
-        </div>
+    <div class="kpi-card kpi-accent">
+        <p class="kpi-label">Samples Collected</p>
+        <p class="kpi-value">{{ $totalSamplesCollected }}</p>
+        <p class="kpi-trend">Captured by laboratory workflow</p>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3">
-            <h5>High Viral Load</h5>
-            <h3>{{ $totalHighVL }}</h3>
-        </div>
+    <div class="kpi-card kpi-danger">
+        <p class="kpi-label">High Viral Load</p>
+        <p class="kpi-value">{{ $totalHighVL }}</p>
+        <p class="kpi-trend">Requires close clinical follow-up</p>
+    </div>
+    <div class="kpi-card kpi-danger">
+        <p class="kpi-label">Samples Rejected</p>
+        <p class="kpi-value">{{ $totalSamplesRejected }}</p>
+        <p class="kpi-trend">Monitor sample quality issues</p>
+    </div>
+    <div class="kpi-card kpi-warn">
+        <p class="kpi-label">Due for EAC</p>
+        <p class="kpi-value">{{ $totalDueEAC }}</p>
+        <p class="kpi-trend">Patients flagged for counseling</p>
+    </div>
+    <div class="kpi-card kpi-info">
+        <p class="kpi-label">Repeat VL Required</p>
+        <p class="kpi-value">{{ $totalDueRepeatVL }}</p>
+        <p class="kpi-trend">Follow-up test needed after EAC</p>
     </div>
 </div>
 
-<div class="row mt-3">
-    <div class="col-md-3">
-        <div class="card p-3">
-            <h5>Samples Rejected</h5>
-            <h3>{{ $totalSamplesRejected }}</h3>
+<div class="chart-grid">
+    <section class="chart-card">
+        <h3 class="chart-title">Viral Load Suppression</h3>
+        <div class="chart-canvas-wrap">
+            <canvas id="vlChart"></canvas>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card p-3">
-            <h5>Due for EAC</h5>
-            <h3>{{ $totalDueEAC }}</h3>
+    </section>
+    <section class="chart-card">
+        <h3 class="chart-title">Appointment Status</h3>
+        <div class="chart-canvas-wrap">
+            <canvas id="appointmentChart"></canvas>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card p-3">
-            <h5>Repeat VL</h5>
-            <h3>{{ $totalDueRepeatVL }}</h3>
+    </section>
+</div>
+
+<div class="chart-grid">
+    <section class="chart-card">
+        <h3 class="chart-title">EAC Completion Progress</h3>
+        <div class="chart-canvas-wrap">
+            <canvas id="eacChart"></canvas>
         </div>
-    </div>
+    </section>
 </div>
 
-<!-- Charts Section -->
-<div class="row mt-4">
-    <div class="col-md-6">
-        <canvas id="vlChart"></canvas>
-    </div>
-    <div class="col-md-6">
-        <canvas id="appointmentChart"></canvas>
-    </div>
+<div class="alert-grid">
+    <a href="/viral-load" class="alert-card alert-danger">
+        <p class="alert-label">High Viral Load Patients</p>
+        <p class="alert-value">{{ $highVL }}</p>
+    </a>
+    <a href="/eac" class="alert-card alert-warning">
+        <p class="alert-label">Patients in EAC</p>
+        <p class="alert-value">{{ $dueEAC }}</p>
+    </a>
+    <a href="/viral-load" class="alert-card alert-success">
+        <p class="alert-label">Repeat VL Required</p>
+        <p class="alert-value">{{ $repeatVL }}</p>
+    </a>
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-6">
-        <canvas id="eacChart"></canvas>
-    </div>
-</div>
+@endsection
 
-<!-- Summary Cards with Clickable Alerts -->
-<div class="row mt-4">
-    <div class="col-md-4">
-        <a href="/viral-load" class="text-decoration-none">
-            <div class="card p-3 border-danger">
-                <h5>High Viral Load Patients</h5>
-                <h3 class="text-danger">{{ $highVL }}</h3>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-4">
-        <a href="/eac" class="text-decoration-none">
-            <div class="card p-3 border-warning">
-                <h5>Patients in EAC</h5>
-                <h3 class="text-warning">{{ $dueEAC }}</h3>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-4">
-        <a href="/viral-load" class="text-decoration-none">
-            <div class="card p-3 border-success">
-                <h5>Repeat VL Required</h5>
-                <h3 class="text-success">{{ $repeatVL }}</h3>
-            </div>
-        </a>
-    </div>
-</div>
-
-<!-- Chart.js Scripts -->
+@push('scripts')
 <script>
-    // Viral Load Pie Chart
     new Chart(document.getElementById('vlChart'), {
-        type: 'pie',
+        type: 'doughnut',
         data: {
             labels: ['Suppressed', 'Unsuppressed'],
             datasets: [{
                 data: [{{ $suppressed }}, {{ $unsuppressed }}],
-                backgroundColor: ['#36A2EB', '#FF6384']
+                backgroundColor: ['#14b8a6', '#ef4444']
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
         }
     });
 
-    // Appointments Bar Chart
     new Chart(document.getElementById('appointmentChart'), {
         type: 'bar',
         data: {
             labels: ['Scheduled', 'Completed', 'Missed'],
             datasets: [{
                 data: [{{ $scheduled }}, {{ $completed }}, {{ $missed }}],
-                backgroundColor: ['#4BC0C0', '#36A2EB', '#FFCE56']
+                backgroundColor: ['#0ea5a0', '#3b82f6', '#f59e0b'],
+                borderRadius: 8,
+                maxBarThickness: 44
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
         }
     });
 
-    // EAC Doughnut Chart
     new Chart(document.getElementById('eacChart'), {
-        type: 'doughnut',
+        type: 'pie',
         data: {
             labels: ['Completed', 'Ongoing'],
             datasets: [{
                 data: [{{ $completedEAC }}, {{ $ongoingEAC }}],
-                backgroundColor: ['#4CAF50', '#FFC107']
+                backgroundColor: ['#16a34a', '#f59e0b']
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
         }
     });
 </script>
-
-@endsection
+@endpush

@@ -1,29 +1,35 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ViLoCare - HIV Patient Viral Load Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <style>
-    body { background-color: #f8fafc; min-height: 100vh; }
-    .login-container { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); height: 100vh; display: flex; align-items: center; justify-content: center; }
-    .login-card { background: white; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); width: 100%; max-width: 420px; padding: 2rem; }
-    .login-logo { text-align: center; margin-bottom: 2rem; }
-    /* Make the logo responsive */
-    .login-logo img { width: 150px; max-width: 100%; height: auto; }
-    .btn-primary { background-color: #2563eb; border-color: #2563eb; }
-    .btn-primary:hover { background-color: #1d4ed8; border-color: #1d4ed8; }
-  </style>
+  <link href="{{ asset('css/login.css') }}" rel="stylesheet" />
 </head>
-<body>
-  <div class="login-container">
-    <div class="login-card">
-      <div class="login-logo">
-        <img src="{{ asset('images/vilocarelogo.png') }}" alt="ViLoCare Logo" />
-        <p class="text-muted mb-3" style="font-size: 1rem;">HIV Patient Viral Load Management System</p>
+<body class="login-page">
+  <div class="background-orb orb-one"></div>
+  <div class="background-orb orb-two"></div>
+
+  <main class="login-shell">
+    <section class="brand-panel">
+      <img class="brand-logo" src="{{ asset('images/vilocarelogo.png') }}" alt="ViLoCare Logo" />
+      <h1 class="brand-title">Smarter Viral Load Care Starts Here</h1>
+      <p class="brand-copy">Securely access ViLoCare to manage patient viral load results, coordinate follow-up, and improve care outcomes.</p>
+      <div class="badge-row">
+        <span class="mini-badge">Secure Access</span>
+        <span class="mini-badge">Care Coordination</span>
+        <span class="mini-badge">Data Accuracy</span>
       </div>
-      
+    </section>
+
+    <section class="form-panel">
+      <h2 class="form-title">Welcome back</h2>
+      <p class="form-subtitle">Sign in to your account to continue.</p>
+
       @if(session('error'))
         <div class="alert alert-danger">{{ session('error') }}</div>
       @endif
@@ -53,13 +59,14 @@
           <input type="checkbox" class="form-check-input" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
           <label class="form-check-label" for="remember">Remember me</label>
         </div>
-        <button type="submit" class="btn btn-primary w-100">Sign in</button>
+        <button type="submit" class="btn login-submit-btn w-100">Sign in</button>
         <div class="text-center mt-3">
-          <a href="#" class="text-decoration-none">Forgot password?</a>
+          <a href="#" class="forgot-link">Forgot password?</a>
         </div>
       </form>
-    </div>
-  </div>
+    </section>
+  </main>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
