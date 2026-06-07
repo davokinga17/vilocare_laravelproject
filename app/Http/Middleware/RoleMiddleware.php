@@ -14,7 +14,11 @@ class RoleMiddleware
             return redirect('/');
         }
 
-        if (!in_array(Auth::user()->role, $roles)) {
+        $userRole = Auth::user()->role === 'Data Officer'
+            ? 'Data Clerk'
+            : Auth::user()->role;
+
+        if (!in_array($userRole, $roles)) {
             abort(403, 'Unauthorized');
         }
 

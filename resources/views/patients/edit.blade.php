@@ -16,23 +16,13 @@
     </div>
 @endif
 
-<form method="POST" action="/patients/{{ $patient->id }}/update">
+<form method="POST" action="{{ route('patients.update', $patient->patient_id) }}">
     @csrf
-    @method('PUT') <!-- Make sure your route supports PUT method for update -->
+    @method('PUT')
 
-    <input type="text" name="art_number" value="{{ old('art_number', $patient->art_number) }}" class="form-control mb-2" placeholder="ART Number">
-    <input type="text" name="first_name" value="{{ old('first_name', $patient->first_name) }}" class="form-control mb-2" placeholder="First Name">
-    <input type="text" name="last_name" value="{{ old('last_name', $patient->last_name) }}" class="form-control mb-2" placeholder="Last Name">
+    @include('patients.form')
 
-    <select name="sex" class="form-control mb-2">
-        <option value="">Select Sex</option>
-        <option value="Male" {{ old('sex', $patient->sex) == 'Male' ? 'selected' : '' }}>Male</option>
-        <option value="Female" {{ old('sex', $patient->sex) == 'Female' ? 'selected' : '' }}>Female</option>
-    </select>
-
-    <input type="text" name="phone" value="{{ old('phone', $patient->phone) }}" class="form-control mb-2" placeholder="Phone">
-
-    <button class="btn btn-primary">Update</button>
+    <button class="btn btn-primary mt-3">Update</button>
 </form>
 
 @endsection

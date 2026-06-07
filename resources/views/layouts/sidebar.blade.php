@@ -32,17 +32,17 @@
             </a>
         @endif
 
-        @if(in_array($role, ['Administrator', 'Data Clerk', 'Data Officer']))
-            <a href="/patients/create" class="sidebar-link {{ request()->is('patients/create') ? 'is-active' : '' }}">
-                <span class="sidebar-icon">AP</span>
-                Add Patient
-            </a>
-        @endif
-
         @if(in_array($role, ['Administrator', 'Clinician', 'Lab Technician']))
             <a href="/viral-load" class="sidebar-link {{ request()->is('viral-load') || request()->is('viral-load/*') ? 'is-active' : '' }}">
                 <span class="sidebar-icon">VL</span>
                 Viral Load
+            </a>
+        @endif
+
+        @if(in_array($role, ['Administrator', 'Clinician', 'Data Clerk', 'Data Officer', 'Lab Technician']))
+            <a href="{{ route('samples.index') }}" class="sidebar-link {{ request()->is('samples') || request()->is('samples/*') ? 'is-active' : '' }}">
+                <span class="sidebar-icon">SM</span>
+                Samples
             </a>
         @endif
 
@@ -66,6 +66,15 @@
             <span class="sidebar-icon">RP</span>
             Reports
         </a>
+
+        @if($role === 'Administrator')
+            <p class="sidebar-section">Admin</p>
+
+            <a href="{{ route('admin.users.index') }}" class="sidebar-link {{ request()->is('admin/users') || request()->is('admin/users/*') ? 'is-active' : '' }}">
+                <span class="sidebar-icon">US</span>
+                Users
+            </a>
+        @endif
     </nav>
 
     <div class="sidebar-footer">

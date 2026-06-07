@@ -22,7 +22,14 @@ class AppointmentController extends Controller
 
     public function store(Request $request)
     {
-        Appointment::create($request->all());
+        $validated = $request->validate([
+            'patient_id' => ['required', 'exists:patients,patient_id'],
+            'appointment_date' => ['required', 'date'],
+            'reason' => ['nullable', 'string'],
+            'status' => ['required', 'in:Pending,Completed,Missed,Cancelled'],
+        ]);
+
+        Appointment::create($validated);
 
         return redirect('/appointments')->with('success', 'Appointment created');
     }

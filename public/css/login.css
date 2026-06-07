@@ -12,7 +12,7 @@
 body.login-page {
   min-height: 100vh;
   margin: 0;
-  font-family: "Manrope", sans-serif;
+  font-family: "Segoe UI", Arial, sans-serif;
   color: var(--ink);
   background: radial-gradient(circle at 12% 10%, #d5e9ff 0%, transparent 34%),
               radial-gradient(circle at 85% 18%, #ffe6cc 0%, transparent 38%),
@@ -22,6 +22,35 @@ body.login-page {
   justify-content: center;
   padding: 1.5rem;
   overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.btn {
+  appearance: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .background-orb {
@@ -158,6 +187,7 @@ body.login-page {
 }
 
 .form-label {
+  display: inline-block;
   font-size: 0.88rem;
   font-weight: 700;
   color: #253347;
@@ -166,6 +196,8 @@ body.login-page {
 
 .form-control,
 .form-select {
+  display: block;
+  width: 100%;
   border: 1px solid var(--line);
   border-radius: 12px;
   min-height: 48px;
@@ -173,6 +205,8 @@ body.login-page {
   font-size: 0.95rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   background-color: #ffffff;
+  color: var(--ink);
+  outline: 0;
 }
 
 .form-control:focus,
@@ -184,6 +218,20 @@ body.login-page {
 .form-check-label {
   color: #45566d;
   font-size: 0.92rem;
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.form-check-input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  border: 1px solid var(--line);
+  accent-color: var(--accent);
 }
 
 .form-check-input:checked {
@@ -223,6 +271,8 @@ body.login-page {
 }
 
 .login-page .alert-danger {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
   border-radius: 12px;
   border: 1px solid #f4c8bf;
   background: #fff1ee;

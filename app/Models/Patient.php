@@ -25,7 +25,7 @@ class Patient extends Model
         'phone',
         'art_start_date',
         'current_regimen',
-        'age_category',
+        'age',
         'is_pregnant',
         'is_breastfeeding',
         'arv_adherence',
@@ -33,4 +33,16 @@ class Patient extends Model
         'county_id',
         'state_id'
     ];
+
+    protected $casts = [
+        'art_start_date' => 'date',
+        'age' => 'integer',
+        'is_pregnant' => 'boolean',
+        'is_breastfeeding' => 'boolean',
+    ];
+
+    public function sampleCollections()
+    {
+        return $this->hasMany(SampleCollection::class, 'patient_id', 'patient_id');
+    }
 }

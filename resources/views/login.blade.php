@@ -4,10 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ViLoCare - HIV Patient Viral Load Management System</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="{{ asset('css/login.css') }}" rel="stylesheet" />
 </head>
 <body class="login-page">
@@ -51,7 +47,7 @@
             <option value="" disabled {{ old('role') ? '' : 'selected' }}>Select your role</option>
             <option value="Clinician" {{ old('role') == 'Clinician' ? 'selected' : '' }}>Clinician</option>
             <option value="Lab Technician" {{ old('role') == 'Lab Technician' ? 'selected' : '' }}>Lab Technician</option>
-            <option value="Data Officer" {{ old('role') == 'Data Officer' ? 'selected' : '' }}>Data Officer</option>
+            <option value="Data Clerk" {{ old('role') == 'Data Clerk' ? 'selected' : '' }}>Data Clerk</option>
             <option value="Administrator" {{ old('role') == 'Administrator' ? 'selected' : '' }}>Administrator</option>
           </select>
         </div>
@@ -67,6 +63,5 @@
     </section>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -8,6 +8,8 @@ use App\Http\Controllers\ViralLoadController;
 use App\Http\Controllers\EACController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\SampleController;
 
 // Show login form
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -30,9 +32,15 @@ Route::middleware(['auth', 'role:Administrator,Clinician,Data Clerk'])->group(fu
     Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
     Route::get('/patients/create', [PatientController::class, 'create'])->name('patients.create');
     Route::post('/patients/store', [PatientController::class, 'store'])->name('patients.store');
+    Route::post('/patients/import', [PatientController::class, 'import'])->name('patients.import');
     Route::get('/patients/{id}', [PatientController::class, 'show'])->name('patients.show');
     Route::get('/patients/{id}/edit', [PatientController::class, 'edit'])->name('patients.edit');
-    Route::post('/patients/{id}/update', [PatientController::class, 'update'])->name('patients.update');
+    Route::match(['post', 'put'], '/patients/{id}/update', [PatientController::class, 'update'])->name('patients.update');
+    Route::delete('/patients/{id}/delete', [PatientController::class, 'destroy'])->name('patients.destroy');
+
+    Route::get('/samples', [SampleController::class, 'index'])->name('samples.index');
+    Route::post('/samples', [SampleController::class, 'store'])->name('samples.store');
+    Route::post('/samples/rejections', [SampleController::class, 'reject'])->name('samples.reject');
 
     // EAC for Clinician+Admin
     Route::get('/eac', [EACController::class, 'index']);
@@ -44,7 +52,11 @@ Route::middleware(['auth', 'role:Administrator,Clinician,Data Clerk'])->group(fu
 
 // ADMIN group stay for admin-only routes
 Route::middleware(['auth', 'role:Administrator'])->group(function () {
-    // Add admin-only routes here if needed
+    Route::get('/admin/users', [UserManagementController::class, 'index'])->name('admin.users.index');
+    Route::get('/admin/users/create', [UserManagementController::class, 'create'])->name('admin.users.create');
+    Route::post('/admin/users', [UserManagementController::class, 'store'])->name('admin.users.store');
+    Route::get('/admin/users/{user}/edit', [UserManagementController::class, 'edit'])->name('admin.users.edit');
+    Route::post('/admin/users/{user}', [UserManagementController::class, 'update'])->name('admin.users.update');
 });
 
 // DATA CLERK
@@ -64,13 +76,6 @@ Route::middleware(['auth', 'role:Administrator,Lab Technician'])->group(function
     Route::post('/viral-load/store', [ViralLoadController::class, 'store']);
 });
 
-Route::middleware(['auth', 'role:Administrator,Data Clerk'])->group(function () {
-
-    Route::get('/appointments', [AppointmentController::class, 'index']);
-    Route::get('/appointments/create', [AppointmentController::class, 'create']);
-    Route::post('/appointments/store', [AppointmentController::class, 'store']);
-
-});
 Route::middleware(['auth'])->group(function () {
 
     // Reports index
@@ -89,3 +94,10 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware('auth')
     ->name('dashboard');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard/vl-due', [DashboardController::class, 'dueForVlList'])
+        ->name('dashboard.vl_due.list');
+    Route::get('/dashboard/vl-due/export', [DashboardController::class, 'exportDueForVlList'])
+        ->name('dashboard.vl_due.export');
+});
