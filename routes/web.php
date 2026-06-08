@@ -10,12 +10,18 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\SampleController;
+use App\Http\Controllers\ProfileController;
 
 // Show login form
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 
 // Handle login submission
 Route::post('/login', [AuthController::class, 'login']);
+
+Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
+Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
 // Logout route
 Route::get('/logout', [AuthController::class, 'logout']);
@@ -28,7 +34,7 @@ Route::get('/', function () {
 // Step 4: Protect Routes by Role
 
 // PATIENTS and related resources
-Route::middleware(['auth', 'role:Administrator,Clinician,Data Clerk'])->group(function () {
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clinician,Data Clerk'])->group(function () {
     Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
     Route::get('/patients/create', [PatientController::class, 'create'])->name('patients.create');
     Route::post('/patients/store', [PatientController::class, 'store'])->name('patients.store');
@@ -51,7 +57,7 @@ Route::middleware(['auth', 'role:Administrator,Clinician,Data Clerk'])->group(fu
 });
 
 // ADMIN group stay for admin-only routes
-Route::middleware(['auth', 'role:Administrator'])->group(function () {
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clinician'])->group(function () {
     Route::get('/admin/users', [UserManagementController::class, 'index'])->name('admin.users.index');
     Route::get('/admin/users/create', [UserManagementController::class, 'create'])->name('admin.users.create');
     Route::post('/admin/users', [UserManagementController::class, 'store'])->name('admin.users.store');
@@ -60,7 +66,7 @@ Route::middleware(['auth', 'role:Administrator'])->group(function () {
 });
 
 // DATA CLERK
-Route::middleware(['auth', 'role:Administrator,Data Clerk'])->group(function () {
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Data Clerk'])->group(function () {
     // Patients routes are now in the above group
 
     // Future: Appointments module
@@ -70,13 +76,20 @@ Route::middleware(['auth', 'role:Administrator,Data Clerk'])->group(function () 
 });
 
 // LAB TECHNICIAN
-Route::middleware(['auth', 'role:Administrator,Lab Technician'])->group(function () {
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Lab Technician'])->group(function () {
     Route::get('/viral-load', [ViralLoadController::class, 'index']);
     Route::get('/viral-load/create', [ViralLoadController::class, 'create']);
     Route::post('/viral-load/store', [ViralLoadController::class, 'store']);
 });
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'password.change.required'])->group(function () {
+    Route::get('/change-password', [AuthController::class, 'showChangePassword'])->name('password.change.edit');
+    Route::post('/change-password', [AuthController::class, 'updatePassword'])->name('password.change.update');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+});
+
+Route::middleware(['auth', 'password.change.required'])->group(function () {
 
     // Reports index
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
@@ -92,10 +105,10 @@ Route::middleware(['auth'])->group(function () {
 
 // Dashboard accessible to all authenticated users
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware('auth')
+    ->middleware(['auth', 'password.change.required'])
     ->name('dashboard');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'password.change.required'])->group(function () {
     Route::get('/dashboard/vl-due', [DashboardController::class, 'dueForVlList'])
         ->name('dashboard.vl_due.list');
     Route::get('/dashboard/vl-due/export', [DashboardController::class, 'exportDueForVlList'])

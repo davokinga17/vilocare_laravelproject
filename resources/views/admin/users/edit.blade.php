@@ -7,7 +7,7 @@
 <div class="d-flex align-items-center justify-content-between mb-3">
     <div>
         <h2 class="mb-1">Edit User</h2>
-        <p class="text-muted mb-0">Update account details and access role.</p>
+        <p class="text-muted mb-0">Update account details and access role. Password changes are done by the user or through the reset flow.</p>
     </div>
     <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Back</a>
 </div>

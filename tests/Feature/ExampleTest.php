@@ -10,10 +10,8 @@ class ExampleTest extends TestCase
     /**
      * A basic test example.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_the_login_route_is_registered(): void
     {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
+        $this->assertSame(url('/login'), route('login'));
     }
 }

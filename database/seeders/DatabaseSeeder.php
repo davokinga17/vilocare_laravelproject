@@ -26,7 +26,9 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'username' => 'admin',
             'role' => 'Administrator',
+            'phone' => '+0000000000',
             'password' => Hash::make('password'),
+            'must_change_password' => false,
         ]);
     }
 }

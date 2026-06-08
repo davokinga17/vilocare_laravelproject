@@ -30,6 +30,10 @@
         <div class="alert alert-danger">{{ session('error') }}</div>
       @endif
 
+      @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+      @endif
+
       <form method="POST" action="{{ route('login') }}" autocomplete="off">
         @csrf
 
@@ -41,23 +45,13 @@
           <label for="password" class="form-label">Password</label>
           <input type="password" name="password" class="form-control" id="password" placeholder="Enter your password" required />
         </div>
-        <div class="mb-3">
-          <label for="role" class="form-label">Select your role</label>
-          <select class="form-select" name="role" id="role" required>
-            <option value="" disabled {{ old('role') ? '' : 'selected' }}>Select your role</option>
-            <option value="Clinician" {{ old('role') == 'Clinician' ? 'selected' : '' }}>Clinician</option>
-            <option value="Lab Technician" {{ old('role') == 'Lab Technician' ? 'selected' : '' }}>Lab Technician</option>
-            <option value="Data Clerk" {{ old('role') == 'Data Clerk' ? 'selected' : '' }}>Data Clerk</option>
-            <option value="Administrator" {{ old('role') == 'Administrator' ? 'selected' : '' }}>Administrator</option>
-          </select>
-        </div>
         <div class="mb-3 form-check">
           <input type="checkbox" class="form-check-input" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
           <label class="form-check-label" for="remember">Remember me</label>
         </div>
         <button type="submit" class="btn login-submit-btn w-100">Sign in</button>
         <div class="text-center mt-3">
-          <a href="#" class="forgot-link">Forgot password?</a>
+          <a href="{{ route('password.request') }}" class="forgot-link">Forgot password?</a>
         </div>
       </form>
     </section>

@@ -23,6 +23,11 @@
             Dashboard
         </a>
 
+        <a href="{{ route('profile.edit') }}" class="sidebar-link {{ request()->is('profile') ? 'is-active' : '' }}">
+            <span class="sidebar-icon">PR</span>
+            My Profile
+        </a>
+
         <p class="sidebar-section">Clinical</p>
 
         @if(in_array($role, ['Administrator', 'Clinician', 'Data Clerk', 'Data Officer']))
@@ -67,12 +72,12 @@
             Reports
         </a>
 
-        @if($role === 'Administrator')
+        @if(in_array($role, ['Administrator', 'Clinician']))
             <p class="sidebar-section">Admin</p>
 
             <a href="{{ route('admin.users.index') }}" class="sidebar-link {{ request()->is('admin/users') || request()->is('admin/users/*') ? 'is-active' : '' }}">
                 <span class="sidebar-icon">US</span>
-                Users
+                User Accounts
             </a>
         @endif
     </nav>

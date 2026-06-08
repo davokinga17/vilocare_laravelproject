@@ -15,6 +15,7 @@
 </head>
 
 <body>
+@php($currentUser = auth()->user())
 <div class="app-shell">
     @include('layouts.sidebar')
     <div class="app-main">
@@ -24,10 +25,14 @@
                 <h1 class="topbar-title">@yield('page_title', 'Dashboard')</h1>
             </div>
             <div class="topbar-user">
-                <span class="user-chip">
-                    <span class="user-dot"></span>
-                    {{ auth()->user()->username }}
-                </span>
+                <a href="{{ route('profile.edit') }}" class="user-chip text-decoration-none">
+                    @if($currentUser && $currentUser->profilePhotoUrl())
+                        <img src="{{ $currentUser->profilePhotoUrl() }}" alt="{{ $currentUser->name }}" style="width: 28px; height: 28px; border-radius: 999px; object-fit: cover;">
+                    @else
+                        <span class="user-dot"></span>
+                    @endif
+                    {{ $currentUser?->name }}
+                </a>
                 <a href="{{ url('/logout') }}" class="btn-logout">Logout</a>
             </div>
         </nav>
@@ -36,6 +41,11 @@
             @if(session('success'))
                 <div class="alert alert-success">
                     {{ session('success') }}
+                </div>
+            @endif
+            @if(session('warning'))
+                <div class="alert alert-warning">
+                    {{ session('warning') }}
                 </div>
             @endif
             @yield('content')

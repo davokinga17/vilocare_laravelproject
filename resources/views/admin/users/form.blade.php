@@ -14,6 +14,16 @@
     </div>
 
     <div class="col-md-6">
+        <label for="email" class="form-label">Email Address</label>
+        <input id="email" type="email" name="email" class="form-control" value="{{ old('email', $user->email ?? '') }}" placeholder="user@example.com">
+    </div>
+
+    <div class="col-md-6">
+        <label for="phone" class="form-label">Phone Number</label>
+        <input id="phone" type="text" name="phone" class="form-control" value="{{ old('phone', $user->phone ?? $user->contact ?? '') }}" placeholder="+211...">
+    </div>
+
+    <div class="col-md-6">
         <label for="role" class="form-label">Role</label>
         <select id="role" name="role" class="form-select" required>
             <option value="">Select role</option>
@@ -22,25 +32,13 @@
             @endforeach
         </select>
     </div>
-
-    <div class="col-md-6">
-        <label for="contact" class="form-label">Contact</label>
-        <input id="contact" type="text" name="contact" class="form-control" value="{{ old('contact', $user->contact ?? '') }}">
-    </div>
-
-    <div class="col-md-6">
-        <label for="password" class="form-label">Password</label>
-        <input id="password" type="password" name="password" class="form-control" @required($passwordRequired)>
-        @unless($passwordRequired)
-            <div class="form-text">Leave blank to keep the current password.</div>
-        @endunless
-    </div>
-
-    <div class="col-md-6">
-        <label for="password_confirmation" class="form-label">Confirm Password</label>
-        <input id="password_confirmation" type="password" name="password_confirmation" class="form-control" @required($passwordRequired)>
-    </div>
 </div>
+
+@if($passwordRequired)
+    <div class="alert alert-info mt-4 mb-0">
+        ViLoCare will generate a secure temporary password automatically. The user will be forced to change it at first login.
+    </div>
+@endif
 
 <div class="mt-4">
     <button type="submit" class="btn btn-primary">{{ $submitLabel }}</button>
