@@ -11,6 +11,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\SampleController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardSupportController;
 
 // Show login form
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -20,6 +21,7 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
 Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
+Route::get('/reset-password', [AuthController::class, 'missingResetToken']);
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
@@ -63,6 +65,7 @@ Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clini
     Route::post('/admin/users', [UserManagementController::class, 'store'])->name('admin.users.store');
     Route::get('/admin/users/{user}/edit', [UserManagementController::class, 'edit'])->name('admin.users.edit');
     Route::post('/admin/users/{user}', [UserManagementController::class, 'update'])->name('admin.users.update');
+    Route::delete('/admin/users/{user}', [UserManagementController::class, 'destroy'])->name('admin.users.destroy');
 });
 
 // DATA CLERK
@@ -93,6 +96,10 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
 
     // Reports index
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/summary/pdf', [ReportController::class, 'summaryPDF'])->name('reports.summary.pdf');
+    Route::get('/reports/summary/excel', [ReportController::class, 'summaryExcel'])->name('reports.summary.excel');
+    Route::get('/reports/verify/{reference}', [ReportController::class, 'verify'])->name('reports.verify.reference');
+    Route::get('/reports/verify', [ReportController::class, 'verify'])->name('reports.verify');
 
     // Patients
     Route::get('/reports/patients/pdf', [ReportController::class, 'patientsPDF'])->name('reports.patients.pdf');
@@ -113,4 +120,12 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
         ->name('dashboard.vl_due.list');
     Route::get('/dashboard/vl-due/export', [DashboardController::class, 'exportDueForVlList'])
         ->name('dashboard.vl_due.export');
+});
+
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clinician'])->group(function () {
+    Route::post('/dashboard/support/appointment-reminder', [DashboardSupportController::class, 'sendAppointmentReminder'])
+        ->name('dashboard.support.reminder');
+    Route::post('/dashboard/support/chat', [DashboardSupportController::class, 'chat'])
+        ->middleware('throttle:dashboard-chatbot')
+        ->name('dashboard.support.chat');
 });

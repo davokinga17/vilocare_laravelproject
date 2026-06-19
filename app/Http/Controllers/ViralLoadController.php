@@ -6,9 +6,15 @@ use Illuminate\Http\Request;
 use App\Models\ViralLoad;
 use App\Models\Patient;
 use App\Models\EACSession;
+use App\Services\NotificationService;
 
 class ViralLoadController extends Controller
 {
+    public function __construct(
+        private readonly NotificationService $notificationService
+    ) {
+    }
+
     public function index()
     {
         $results = ViralLoad::with('patient')->orderBy('sample_date', 'desc')->get();
@@ -25,7 +31,7 @@ class ViralLoadController extends Controller
     public function store(Request $request)
 {
     $request->validate([
-        'patient_id' => 'required',
+        'patient_id' => 'required|exists:patients,patient_id',
         'result_cpml' => 'required|numeric'
     ]);
 
@@ -45,6 +51,10 @@ class ViralLoadController extends Controller
                 'completion_status' => 'Pending'
             ]);
         }
+    }
+
+    if ((float) $request->result_cpml >= 1000) {
+        $this->notificationService->sendHighViralLoadAlert($vl->load('patient'), $request->user());
     }
 
     return redirect('/viral-load')->with('success', 'Viral Load recorded');

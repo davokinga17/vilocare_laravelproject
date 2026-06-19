@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Exports\DueForVlExport;
+use App\Models\NotificationLog;
 use App\Models\Patient;
+use App\Services\DashboardSummaryService;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -13,6 +15,11 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private readonly DashboardSummaryService $dashboardSummaryService
+    ) {
+    }
+
     public function index(Request $request)
     {
         $today = Carbon::today()->toDateString();
@@ -105,6 +112,13 @@ class DashboardController extends Controller
         $highVL = $unsuppressed;
         $dueEAC = $totalDueEAC;
         $repeatVL = $totalDueRepeatVL;
+        $supportSummary = $this->dashboardSummaryService->summary($activeFilters);
+        $recentNotifications = Schema::hasTable('notification_logs')
+            ? NotificationLog::query()->latest()->limit(6)->get()
+            : collect();
+        $upcomingAppointments = $supportSummary['upcomingAppointments'] ?? collect();
+        $supportAccess = (bool) $request->user()?->canManageUsers();
+        $assistantEnabled = filled(config('services.openai.api_key'));
 
         return view('dashboard', compact(
             'totalPatients',
@@ -134,7 +148,11 @@ class DashboardController extends Controller
             'filterConfig',
             'filterOptions',
             'activeFilters',
-            'filterQuery'
+            'filterQuery',
+            'recentNotifications',
+            'upcomingAppointments',
+            'supportAccess',
+            'assistantEnabled'
         ));
     }
 

@@ -7,52 +7,161 @@
 @endpush
 
 @section('content')
+@php
+    $activeFilterSummary = collect([
+        ['label' => 'State', 'value' => data_get(collect($filterOptions['state_id'] ?? [])->firstWhere('value', (string) ($activeFilters['state_id'] ?? '')), 'label')],
+        ['label' => 'County', 'value' => data_get(collect($filterOptions['county_id'] ?? [])->firstWhere('value', (string) ($activeFilters['county_id'] ?? '')), 'label')],
+        ['label' => 'Facility', 'value' => data_get(collect($filterOptions['facility_id'] ?? [])->firstWhere('value', (string) ($activeFilters['facility_id'] ?? '')), 'label')],
+        ['label' => 'Period', 'value' => $summary['periodLabel'] ?? 'All time'],
+    ])->filter(fn ($item) => filled($item['value']))->values();
+
+    $exportTargets = [
+        'summary_pdf' => route('reports.summary.pdf', $filterQuery),
+        'summary_excel' => route('reports.summary.excel', $filterQuery),
+        'patients_pdf' => route('reports.patients.pdf', $filterQuery),
+        'patients_excel' => route('reports.patients.excel', $filterQuery),
+        'viral_load_pdf' => route('reports.viral_load.pdf', $filterQuery),
+        'viral_load_excel' => route('reports.viral_load.excel', $filterQuery),
+    ];
+@endphp
+
 <div class="reports-shell">
-    <section class="reports-hero">
-        <div class="reports-hero-copy">
-            <span class="reports-kicker">Analytics workspace</span>
-            <h2>ViLoCare reporting center</h2>
-            <p>Review patient and viral load performance at a glance, then export the detailed reports when you need formal records.</p>
+    <section class="reports-page-head">
+        <div>
+            <span class="reports-kicker">Signal line</span>
+            <h2>ViLoCare report board</h2>
+            <p>Clean reporting for patient coverage, viral load performance, and operational export packs.</p>
         </div>
-        <div class="reports-hero-meta">
-            <div class="meta-pill">
-                <span>Latest VL result</span>
-                <strong>{{ $latestResultDate }}</strong>
-            </div>
-            <div class="meta-pill emphasis">
-                <span>Suppression rate</span>
-                <strong>{{ $suppressionRate }}</strong>
-            </div>
+        <div class="reports-page-meta">
+            <span>Reference</span>
+            <strong>{{ $summaryReport['reference'] }}</strong>
         </div>
     </section>
 
-    <section class="reports-summary-grid" aria-label="Report summaries">
-        <article class="report-summary-card report-summary-card-feature tone-patients">
-            <div class="summary-main">
-                <span class="summary-badge">PT</span>
-                <div>
-                    <p>Total Patients</p>
-                    <strong>{{ number_format($totalPatients) }}</strong>
-                    <span>Current enrolled records and quick exports</span>
-                </div>
+    <section class="reports-workspace">
+        <div class="report-filter-panel-head">
+            <div>
+                <h3>Filters</h3>
+            </div>
+            @if(($filterConfig['state_id']['available'] ?? false) && ($filterConfig['county_id']['available'] ?? false) && ($filterConfig['facility_id']['available'] ?? false))
+                <span class="report-filter-state is-ready">Location ready</span>
+            @else
+                <span class="report-filter-state">Partial location filters</span>
+            @endif
+        </div>
+
+        <form method="GET" action="{{ route('reports.index') }}" class="reports-filters reports-filters-simple">
+            <div class="filter-field">
+                <label for="state_id">State</label>
+                <select id="state_id" name="state_id" class="form-select form-select-sm" @disabled(!($filterConfig['state_id']['available'] ?? false))>
+                    <option value="">All States</option>
+                    @foreach($filterOptions['state_id'] as $option)
+                        <option value="{{ $option['value'] }}" @selected((string) ($activeFilters['state_id'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
+                    @endforeach
+                </select>
             </div>
 
-            <div class="embedded-export-grid">
-                <div class="embedded-export-block">
-                    <span class="export-label">Patient register</span>
-                    <div class="export-actions">
-                        <a href="{{ route('reports.patients.pdf') }}" class="btn btn-danger btn-sm">Patients PDF</a>
-                        <a href="{{ route('reports.patients.excel') }}" class="btn btn-success btn-sm">Patients Excel</a>
-                    </div>
-                </div>
+            <div class="filter-field">
+                <label for="county_id">County</label>
+                <select id="county_id" name="county_id" class="form-select form-select-sm" @disabled(!($filterConfig['county_id']['available'] ?? false))>
+                    <option value="">All Counties</option>
+                    @foreach($filterOptions['county_id'] as $option)
+                        <option value="{{ $option['value'] }}" @selected((string) ($activeFilters['county_id'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
+                    @endforeach
+                </select>
+            </div>
 
-                <div class="embedded-export-block">
-                    <span class="export-label">Viral load register</span>
-                    <div class="export-actions">
-                        <a href="{{ route('reports.viral_load.pdf') }}" class="btn btn-danger btn-sm">VL PDF</a>
-                        <a href="{{ route('reports.viral_load.excel') }}" class="btn btn-success btn-sm">VL Excel</a>
-                    </div>
+            <div class="filter-field">
+                <label for="facility_id">Facility</label>
+                <select id="facility_id" name="facility_id" class="form-select form-select-sm" @disabled(!($filterConfig['facility_id']['available'] ?? false))>
+                    <option value="">All Facilities</option>
+                    @foreach($filterOptions['facility_id'] as $option)
+                        <option value="{{ $option['value'] }}" @selected((string) ($activeFilters['facility_id'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label for="period">Period</label>
+                <select id="period" name="period" class="form-select form-select-sm">
+                    <option value="all" @selected(($activeFilters['period'] ?? 'all') === 'all')>All Time</option>
+                    <option value="day" @selected(($activeFilters['period'] ?? '') === 'day')>Day</option>
+                    <option value="month" @selected(($activeFilters['period'] ?? '') === 'month')>Month</option>
+                    <option value="quarter" @selected(($activeFilters['period'] ?? '') === 'quarter')>Quarter</option>
+                    <option value="year" @selected(($activeFilters['period'] ?? '') === 'year')>Year</option>
+                </select>
+            </div>
+
+            <div class="filter-field period-input" data-period-field="day">
+                <label for="period_date">Date</label>
+                <input id="period_date" type="date" name="period_date" value="{{ $activeFilters['period_date'] ?? '' }}" class="form-control form-control-sm">
+            </div>
+
+            <div class="filter-field period-input" data-period-field="month">
+                <label for="month">Month</label>
+                <select id="month" name="month" class="form-select form-select-sm">
+                    <option value="">All Months</option>
+                    @foreach(range(1, 12) as $month)
+                        <option value="{{ $month }}" @selected((string) ($activeFilters['month'] ?? '') === (string) $month)>{{ \Carbon\Carbon::create(null, $month, 1)->format('M') }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="filter-field period-input" data-period-field="quarter">
+                <label for="quarter">Quarter</label>
+                <select id="quarter" name="quarter" class="form-select form-select-sm">
+                    <option value="">All Quarters</option>
+                    @foreach(range(1, 4) as $quarter)
+                        <option value="{{ $quarter }}" @selected((string) ($activeFilters['quarter'] ?? '') === (string) $quarter)>Q{{ $quarter }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="filter-field period-input" data-period-field="year">
+                <label for="year">Year</label>
+                <input id="year" type="number" name="year" min="2000" max="2100" value="{{ $activeFilters['year'] ?? '' }}" class="form-control form-control-sm" placeholder="YYYY">
+            </div>
+
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+                <a href="{{ route('reports.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+            </div>
+
+            <div class="report-export-inline">
+                <label for="report_export_select">Export</label>
+                <div class="report-export-inline-controls">
+                    <select id="report_export_select" class="form-select form-select-sm">
+                        <option value="summary_pdf">Summary PDF</option>
+                        <option value="summary_excel">Summary Excel</option>
+                        <option value="patients_pdf">Patients PDF</option>
+                        <option value="patients_excel">Patients Excel</option>
+                        <option value="viral_load_pdf">Viral Load PDF</option>
+                        <option value="viral_load_excel">Viral Load Excel</option>
+                    </select>
+                    <a href="{{ $exportTargets['summary_pdf'] }}" class="btn btn-dark btn-sm" id="reportExportButton">Export</a>
                 </div>
+            </div>
+        </form>
+    </section>
+
+    @if($activeFilterSummary->isNotEmpty())
+        <section class="active-filter-strip">
+            @foreach($activeFilterSummary as $item)
+                <div class="active-filter-chip">
+                    <span>{{ $item['label'] }}</span>
+                    <strong>{{ $item['value'] }}</strong>
+                </div>
+            @endforeach
+        </section>
+    @endif
+
+    <section class="reports-summary-grid" aria-label="Report summaries">
+        <article class="report-summary-card tone-patients">
+            <span class="summary-badge">PT</span>
+            <div>
+                <p>Total Patients</p>
+                <strong>{{ $summary['totalPatients'] }}</strong>
+                <span>Registered patient records in the active scope.</span>
             </div>
         </article>
 
@@ -60,52 +169,56 @@
             <span class="summary-badge">VL</span>
             <div>
                 <p>Total Viral Load Results</p>
-                <strong>{{ number_format($totalViralLoads) }}</strong>
-                <span>Recorded laboratory outcomes</span>
+                <strong>{{ $summary['totalViralLoads'] }}</strong>
+                <span>{{ $summary['latestResultDate'] }} latest result date.</span>
             </div>
         </article>
 
         <article class="report-summary-card tone-good">
             <span class="summary-badge">SP</span>
             <div>
-                <p>Suppressed Results</p>
-                <strong>{{ number_format($suppressed) }}</strong>
-                <span>Results below 1000 cp/ml</span>
+                <p>Suppression Rate</p>
+                <strong>{{ $summary['suppressionRate'] }}</strong>
+                <span>{{ $summary['suppressed'] }} suppressed results recorded.</span>
             </div>
         </article>
 
         <article class="report-summary-card tone-alert">
-            <span class="summary-badge">UV</span>
+            <span class="summary-badge">FC</span>
             <div>
-                <p>Unsuppressed Results</p>
-                <strong>{{ number_format($unsuppressed) }}</strong>
-                <span>Need closer follow-up</span>
+                <p>Facilities Covered</p>
+                <strong>{{ $summary['coveredFacilities'] }}</strong>
+                <span>{{ $summary['coveredCounties'] }} counties represented.</span>
             </div>
         </article>
     </section>
 
-    <section class="reports-grid">
+    <section class="reports-main-grid">
         <article class="report-panel panel-wide">
             <div class="panel-head">
                 <div>
                     <h3>Monthly viral load activity</h3>
-                    <p>Results captured over the last six months.</p>
+                    <p>Year-long view of viral load results linked to the active filters.</p>
                 </div>
+                <span class="panel-tag">Overview</span>
             </div>
             <div class="chart-canvas-wrap chart-tall">
                 <canvas id="monthlyViralLoadChart"></canvas>
             </div>
         </article>
 
-        <article class="report-panel">
+        <article class="report-panel report-panel-stack">
             <div class="panel-head">
                 <div>
-                    <h3>Viral load status</h3>
-                    <p>Suppressed versus unsuppressed results.</p>
+                    <h3>Coverage snapshot</h3>
+                    <p>Quick view of suppression and facility contribution.</p>
                 </div>
             </div>
-            <div class="chart-canvas-wrap chart-compact">
+            <div class="chart-canvas-wrap chart-slim">
                 <canvas id="vlStatusChart"></canvas>
+            </div>
+            <div class="chart-canvas-wrap chart-slim">
+                <canvas id="facilityCoverageChart"></canvas>
             </div>
         </article>
 
@@ -113,7 +226,7 @@
             <div class="panel-head">
                 <div>
                     <h3>Patient sex distribution</h3>
-                    <p>Mix of registered patients by sex.</p>
+                    <p>Mix of patients represented in the report.</p>
                 </div>
             </div>
             <div class="chart-canvas-wrap chart-compact">
@@ -125,7 +238,7 @@
             <div class="panel-head">
                 <div>
                     <h3>Patient age mix</h3>
-                    <p>Most frequently recorded patient ages in care.</p>
+                    <p>Most represented age groups in current scope.</p>
                 </div>
             </div>
             <div class="chart-canvas-wrap chart-compact">
@@ -133,27 +246,15 @@
             </div>
         </article>
 
-        <article class="report-panel">
+        <article class="report-panel panel-wide">
             <div class="panel-head">
                 <div>
                     <h3>Testing indications</h3>
-                    <p>Most common reasons for viral load testing.</p>
+                    <p>Most common reasons for viral load testing in the filtered data.</p>
                 </div>
             </div>
             <div class="chart-canvas-wrap chart-compact">
                 <canvas id="testingIndicationsChart"></canvas>
-            </div>
-        </article>
-
-        <article class="report-panel">
-            <div class="panel-head">
-                <div>
-                    <h3>Facility coverage</h3>
-                    <p>Facilities contributing the largest patient counts.</p>
-                </div>
-            </div>
-            <div class="chart-canvas-wrap chart-compact">
-                <canvas id="facilityCoverageChart"></canvas>
             </div>
         </article>
     </section>
@@ -219,6 +320,7 @@
     const patientAgeMix = @json($analytics['patientAgeMix']);
     const testingIndications = @json($analytics['testingIndications']);
     const facilityCoverage = @json($analytics['facilityCoverage']);
+    const exportTargets = @json($exportTargets);
 
     new Chart(document.getElementById('monthlyViralLoadChart'), {
         type: 'line',
@@ -228,7 +330,7 @@
                 label: 'Viral load results',
                 data: monthlyViralLoads.values,
                 borderColor: reportsPalette.teal,
-                backgroundColor: 'rgba(15, 159, 143, 0.14)',
+                backgroundColor: 'rgba(15, 159, 143, 0.12)',
                 pointBackgroundColor: reportsPalette.teal,
                 pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
@@ -324,7 +426,7 @@
                 data: testingIndications.values,
                 backgroundColor: [reportsPalette.teal, reportsPalette.ocean, reportsPalette.amber, reportsPalette.plum, reportsPalette.coral],
                 borderRadius: 8,
-                maxBarThickness: 40
+                maxBarThickness: 44
             }]
         },
         options: {
@@ -354,5 +456,33 @@
         },
         plugins: [emptyStatePlugin('No facility coverage data available')]
     });
+
+    const periodSelect = document.getElementById('period');
+    const periodInputs = document.querySelectorAll('[data-period-field]');
+    const exportSelect = document.getElementById('report_export_select');
+    const exportButton = document.getElementById('reportExportButton');
+
+    function syncPeriodFields() {
+        const current = periodSelect?.value || 'all';
+
+        periodInputs.forEach((field) => {
+            const shouldShow = field.dataset.periodField === current || (field.dataset.periodField === 'year' && ['month', 'quarter', 'year'].includes(current));
+            field.classList.toggle('is-hidden', !shouldShow);
+        });
+    }
+
+    function syncExportTarget() {
+        if (!exportSelect || !exportButton) {
+            return;
+        }
+
+        exportButton.href = exportTargets[exportSelect.value] || exportTargets.summary_pdf;
+    }
+
+    periodSelect?.addEventListener('change', syncPeriodFields);
+    exportSelect?.addEventListener('change', syncExportTarget);
+
+    syncPeriodFields();
+    syncExportTarget();
 </script>
 @endpush

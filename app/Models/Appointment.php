@@ -19,6 +19,10 @@ class Appointment extends Model
         'status'
     ];
 
+    protected $casts = [
+        'appointment_date' => 'date',
+    ];
+
     public function patient()
     {
         return $this->belongsTo(\App\Models\Patient::class, 'patient_id');

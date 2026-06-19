@@ -10,7 +10,7 @@
     <select name="patient_id" class="form-control mb-2">
         <option value="">Select Patient</option>
         @foreach($patients as $patient)
-            <option value="{{ $patient->id }}">
+            <option value="{{ $patient->patient_id }}">
                 {{ $patient->first_name }} {{ $patient->last_name }}
             </option>
         @endforeach

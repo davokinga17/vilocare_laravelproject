@@ -5,10 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Patient;
 use App\Models\SampleCollection;
 use App\Models\SampleRejection;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class SampleController extends Controller
 {
+    public function __construct(
+        private readonly NotificationService $notificationService
+    ) {
+    }
+
     public function index()
     {
         $samples = SampleCollection::with(['patient', 'rejections'])
@@ -54,9 +60,14 @@ class SampleController extends Controller
             'corrective_action' => ['nullable', 'string'],
         ]);
 
-        SampleRejection::create($validated);
+        $rejection = SampleRejection::create($validated);
 
         SampleCollection::where('sample_id', $validated['sample_id'])->update(['status' => 'Rejected']);
+
+        $sample = SampleCollection::with('patient')->find($validated['sample_id']);
+        if ($sample) {
+            $this->notificationService->sendSampleRejectionAlert($sample, $rejection, $request->user());
+        }
 
         return redirect()->route('samples.index')->with('success', 'Sample rejection recorded successfully.');
     }

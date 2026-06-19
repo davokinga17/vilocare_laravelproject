@@ -5,9 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Appointment;
 use App\Models\Patient;
+use App\Services\NotificationService;
 
 class AppointmentController extends Controller
 {
+    public function __construct(
+        private readonly NotificationService $notificationService
+    ) {
+    }
+
     public function index()
     {
         $appointments = Appointment::with('patient')->get();
@@ -29,7 +35,8 @@ class AppointmentController extends Controller
             'status' => ['required', 'in:Pending,Completed,Missed,Cancelled'],
         ]);
 
-        Appointment::create($validated);
+        $appointment = Appointment::create($validated);
+        $this->notificationService->sendAppointmentReminder($appointment->load('patient'), $request->user());
 
         return redirect('/appointments')->with('success', 'Appointment created');
     }
