@@ -135,6 +135,32 @@ Check these items:
 - the MTN subscription key belongs to `Collections`
 - the target environment is correct
 
+## 9a. If you get `invalid_client`
+
+If the app fails before creating a payment request and shows `invalid_client`, the MTN sandbox rejected the authentication credentials used for token generation.
+
+What this usually means:
+
+- the `MTN_MOMO_API_USER` and `MTN_MOMO_API_KEY` do not belong together
+- the API key was regenerated in sandbox and the old one is still in `.env`
+- the subscription key is not the `Collections` primary key
+- the API user/API key came from the wrong product or old sandbox provisioning
+
+What to do:
+
+1. Open the MTN MoMo developer portal
+2. Confirm you are subscribed to `Collections`
+3. Regenerate or recreate the sandbox API user and API key for `Collections`
+4. Copy the fresh values into `.env`
+5. Clear Laravel config cache
+6. Retry the payment
+
+Important:
+
+- `API user` and `API key` are not your MTN portal login email/password
+- the app already sends the `Ocp-Apim-Subscription-Key` and Basic auth headers correctly
+- if `invalid_client` still appears, the values from MTN are still mismatched or stale
+
 ## 10. Recommended go-live order
 
 1. Deploy the updated code to the online server

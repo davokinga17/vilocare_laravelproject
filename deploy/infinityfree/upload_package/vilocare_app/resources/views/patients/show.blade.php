@@ -4,11 +4,29 @@
 
 <h3>Patient Profile</h3>
 
+@php($latestResult = $patient->viralLoads->first())
 <div class="d-flex gap-2 mb-3">
-    <a href="{{ route('payments.create', ['patient_id' => $patient->patient_id, 'payment_type' => 'result_print']) }}" class="btn btn-outline-primary btn-sm">Record Result Print Fee</a>
-    <a href="{{ route('payments.create', ['patient_id' => $patient->patient_id, 'payment_type' => 'result_pdf']) }}" class="btn btn-outline-secondary btn-sm">Record PDF Fee</a>
-    <a href="{{ route('patients.results.print', $patient->patient_id) }}" class="btn btn-primary btn-sm">Print Latest Result</a>
-    <a href="{{ route('patients.results.pdf', $patient->patient_id) }}" class="btn btn-dark btn-sm">Download Latest Result PDF</a>
+    @if($latestResult && in_array(auth()->user()->role, ['Administrator', 'Clinician', 'Lab Technician']))
+        <form method="POST" action="{{ route('payments.request') }}">
+            @csrf
+            <input type="hidden" name="patient_id" value="{{ $patient->patient_id }}">
+            <input type="hidden" name="vl_id" value="{{ $latestResult->vl_id }}">
+            <input type="hidden" name="payment_type" value="result_print">
+            <button type="submit" class="btn btn-outline-primary btn-sm">Request Print Payment</button>
+        </form>
+        <form method="POST" action="{{ route('payments.request') }}">
+            @csrf
+            <input type="hidden" name="patient_id" value="{{ $patient->patient_id }}">
+            <input type="hidden" name="vl_id" value="{{ $latestResult->vl_id }}">
+            <input type="hidden" name="payment_type" value="result_pdf">
+            <button type="submit" class="btn btn-outline-secondary btn-sm">Request PDF Payment</button>
+        </form>
+        <a href="{{ route('patients.results.print', $patient->patient_id) }}" class="btn btn-primary btn-sm">Print Latest Result</a>
+        <a href="{{ route('patients.results.pdf', $patient->patient_id) }}" class="btn btn-dark btn-sm">Download Latest Result PDF</a>
+    @endif
+    @if(auth()->user()?->canManageUsers())
+        <a href="{{ route('ai.assistant.index', ['patient_id' => $patient->patient_id]) }}" class="btn btn-outline-info btn-sm">Ask AI About Patient</a>
+    @endif
 </div>
 
 <p><strong>ART Number:</strong> {{ $patient->art_number }}</p>
@@ -57,9 +75,20 @@
                             @endif
                         </td>
                         <td>
-                            @if($loop->first)
+                            @if($loop->first && in_array(auth()->user()->role, ['Administrator', 'Clinician', 'Lab Technician']))
                                 <a href="{{ route('patients.results.print', $patient->patient_id) }}" class="btn btn-outline-primary btn-sm">Print</a>
                                 <a href="{{ route('patients.results.pdf', $patient->patient_id) }}" class="btn btn-outline-dark btn-sm">PDF</a>
+                                @if(in_array(auth()->user()->role, ['Administrator', 'Clinician']))
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-success btn-sm"
+                                        data-sms-action="{{ route('sms.viral_load.send_result', $viralLoad->vl_id) }}"
+                                        data-sms-title="Viral Load Result SMS"
+                                        data-sms-hint="Confirm the patient's number and customize the result message before sending."
+                                        data-sms-phone="{{ $patient->phone }}"
+                                        data-sms-message="{{ app(\App\Services\NotificationService::class)->buildViralLoadResultMessage($viralLoad) }}"
+                                    >Send SMS</button>
+                                @endif
                             @else
                                 <span class="text-muted small">Latest result only</span>
                             @endif
@@ -115,7 +144,7 @@
             <tbody>
                 @foreach($patient->payments->take(8) as $payment)
                     <tr>
-                        <td><a href="{{ route('payments.receipt', $payment->payment_id) }}">{{ $payment->receipt_number }}</a></td>
+                        <td>{{ $payment->receipt_number }}</td>
                         <td>{{ $payment->service_label }}</td>
                         <td>{{ $payment->currency }} {{ number_format((float) $payment->amount, 2) }}</td>
                         <td>{{ ucfirst($payment->status) }}</td>

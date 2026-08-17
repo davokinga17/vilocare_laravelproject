@@ -12,6 +12,8 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\SampleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardSupportController;
+use App\Http\Controllers\ManualSmsController;
+use App\Http\Controllers\AiAssistantController;
 use App\Http\Controllers\PaymentController;
 
 // Show login form
@@ -26,6 +28,9 @@ Route::get('/reset-password', [AuthController::class, 'missingResetToken']);
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 Route::post('/payments/{payment}/mtn-momo/callback', [PaymentController::class, 'momoCallback'])->name('payments.momo.callback');
+Route::match(['get', 'post'], '/payments/pesapal/ipn', [PaymentController::class, 'pesapalIpn'])->name('payments.pesapal.ipn');
+Route::get('/payments/{payment}/pesapal/callback', [PaymentController::class, 'pesapalCallback'])->name('payments.pesapal.callback');
+Route::get('/payments/{payment}/mastercard/return', [PaymentController::class, 'mastercardReturn'])->name('payments.mastercard.return');
 
 // Logout route
 Route::get('/logout', [AuthController::class, 'logout']);
@@ -44,22 +49,28 @@ Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clini
     Route::post('/patients/store', [PatientController::class, 'store'])->name('patients.store');
     Route::post('/patients/import', [PatientController::class, 'import'])->name('patients.import');
     Route::get('/patients/{id}', [PatientController::class, 'show'])->name('patients.show');
-    Route::get('/patients/{id}/result/print', [PatientController::class, 'printLatestResult'])->name('patients.results.print');
-    Route::get('/patients/{id}/result/pdf', [PatientController::class, 'pdfLatestResult'])->name('patients.results.pdf');
     Route::get('/patients/{id}/edit', [PatientController::class, 'edit'])->name('patients.edit');
     Route::match(['post', 'put'], '/patients/{id}/update', [PatientController::class, 'update'])->name('patients.update');
     Route::delete('/patients/{id}/delete', [PatientController::class, 'destroy'])->name('patients.destroy');
 
     Route::get('/samples', [SampleController::class, 'index'])->name('samples.index');
+    Route::get('/samples/create', [SampleController::class, 'create'])->name('samples.create');
     Route::post('/samples', [SampleController::class, 'store'])->name('samples.store');
     Route::post('/samples/rejections', [SampleController::class, 'reject'])->name('samples.reject');
 
-    // EAC for Clinician+Admin
-    Route::get('/eac', [EACController::class, 'index']);
-    Route::post('/eac/{id}/complete', [EACController::class, 'complete']);
-
     // Viral load for all roles
     Route::get('/viral-load', [ViralLoadController::class, 'index']);
+});
+
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clinician'])->group(function () {
+    Route::get('/eac', [EACController::class, 'index'])->name('eac.index');
+    Route::post('/eac/{id}/complete', [EACController::class, 'complete'])->name('eac.complete');
+});
+
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clinician,Lab Technician'])->group(function () {
+    Route::get('/patients/{id}/result/print', [PatientController::class, 'printLatestResult'])->name('patients.results.print');
+    Route::get('/patients/{id}/result/pdf', [PatientController::class, 'pdfLatestResult'])->name('patients.results.pdf');
+    Route::post('/payments/request', [PaymentController::class, 'requestPayment'])->name('payments.request');
 });
 
 // ADMIN group stay for admin-only routes
@@ -73,11 +84,14 @@ Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clini
 });
 
 // DATA CLERK
-Route::middleware(['auth', 'password.change.required', 'role:Administrator,Data Clerk'])->group(function () {
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Data Clerk,Receptionist'])->group(function () {
     // Patients routes are now in the above group
 
     // Future: Appointments module
-    Route::get('/appointments', [AppointmentController::class, 'index']);
+    Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+});
+
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Data Clerk'])->group(function () {
     Route::get('/appointments/create', [AppointmentController::class, 'create']);
     Route::post('/appointments/store', [AppointmentController::class, 'store']);
 });
@@ -89,14 +103,14 @@ Route::middleware(['auth', 'password.change.required', 'role:Administrator,Lab T
     Route::post('/viral-load/store', [ViralLoadController::class, 'store']);
 });
 
-Route::middleware(['auth', 'password.change.required'])->group(function () {
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clinician,Lab Technician,Data Clerk,Receptionist'])->group(function () {
     Route::get('/change-password', [AuthController::class, 'showChangePassword'])->name('password.change.edit');
     Route::post('/change-password', [AuthController::class, 'updatePassword'])->name('password.change.update');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
-Route::middleware(['auth', 'password.change.required'])->group(function () {
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clinician,Lab Technician,Data Clerk'])->group(function () {
 
     // Reports index
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
@@ -116,10 +130,10 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
 
 // Dashboard accessible to all authenticated users
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'password.change.required'])
+    ->middleware(['auth', 'password.change.required', 'role:Administrator,Clinician,Lab Technician,Data Clerk'])
     ->name('dashboard');
 
-Route::middleware(['auth', 'password.change.required'])->group(function () {
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clinician,Lab Technician,Data Clerk'])->group(function () {
     Route::get('/dashboard/vl-due', [DashboardController::class, 'dueForVlList'])
         ->name('dashboard.vl_due.list');
     Route::get('/dashboard/vl-due/export', [DashboardController::class, 'exportDueForVlList'])
@@ -127,18 +141,36 @@ Route::middleware(['auth', 'password.change.required'])->group(function () {
 });
 
 Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clinician'])->group(function () {
+    Route::get('/ai-assistant', [AiAssistantController::class, 'index'])
+        ->name('ai.assistant.index');
+    Route::post('/ai-assistant/ask', [AiAssistantController::class, 'ask'])
+        ->middleware('throttle:ai-assistant')
+        ->name('ai.assistant.ask');
     Route::post('/dashboard/support/appointment-reminder', [DashboardSupportController::class, 'sendAppointmentReminder'])
         ->name('dashboard.support.reminder');
     Route::post('/dashboard/support/chat', [DashboardSupportController::class, 'chat'])
         ->middleware('throttle:dashboard-chatbot')
         ->name('dashboard.support.chat');
+    Route::post('/sms/appointments/{appointment}/send', [ManualSmsController::class, 'sendAppointmentReminder'])
+        ->name('sms.appointments.send');
+    Route::post('/sms/viral-load/{viralLoad}/send-result', [ManualSmsController::class, 'sendViralLoadResultMessage'])
+        ->name('sms.viral_load.send_result');
+    Route::post('/sms/eac/{session}/send-reminder', [ManualSmsController::class, 'sendEacDueReminder'])
+        ->name('sms.eac.send_reminder');
+    Route::post('/sms/vl-due/{session}/send-reminder', [ManualSmsController::class, 'sendVlDueReminder'])
+        ->name('sms.vl_due.send_reminder');
 });
 
-Route::middleware(['auth', 'password.change.required', 'role:Administrator,Clinician,Data Clerk'])->group(function () {
+Route::middleware(['auth', 'password.change.required', 'role:Administrator,Receptionist'])->group(function () {
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::get('/payments/create', [PaymentController::class, 'create'])->name('payments.create');
     Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
+    Route::post('/payments/{payment}/accept-cash', [PaymentController::class, 'acceptCash'])->name('payments.accept_cash');
     Route::post('/payments/{payment}/mtn-momo/refresh', [PaymentController::class, 'refreshMomoStatus'])->name('payments.momo.refresh');
+    Route::post('/payments/{payment}/gateway/refresh', [PaymentController::class, 'refreshGatewayStatus'])->name('payments.gateway.refresh');
+    Route::post('/payments/{payment}/retry', [PaymentController::class, 'retry'])->name('payments.retry');
+    Route::get('/payments/{payment}/simulate/{gateway}', [PaymentController::class, 'simulateGateway'])->name('payments.gateway.simulate');
+    Route::post('/payments/{payment}/simulate/{gateway}', [PaymentController::class, 'completeSimulation'])->name('payments.gateway.simulate.complete');
 });

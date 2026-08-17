@@ -10,6 +10,15 @@ use RuntimeException;
 
 class MtnMomoService
 {
+    public function requestCurrency(?string $requestedCurrency = null): string
+    {
+        if ($this->isSandbox()) {
+            return 'EUR';
+        }
+
+        return strtoupper((string) ($requestedCurrency ?: 'EUR'));
+    }
+
     public function isConfigured(): bool
     {
         return filled(config('services.mtn_momo.base_url'))
@@ -23,13 +32,14 @@ class MtnMomoService
     {
         $referenceId = (string) Str::uuid();
         $normalizedPhone = $this->normalizePhoneNumber($phoneNumber);
+        $currency = $this->requestCurrency((string) $payment->currency);
 
         $headers = [
             'X-Reference-Id' => $referenceId,
             'X-Target-Environment' => config('services.mtn_momo.target_environment'),
         ];
 
-        $resolvedCallbackUrl = $callbackUrl ?: config('services.mtn_momo.callback_url');
+        $resolvedCallbackUrl = $this->resolveCallbackUrl($callbackUrl ?: config('services.mtn_momo.callback_url'));
 
         if (filled($resolvedCallbackUrl)) {
             $headers['X-Callback-Url'] = $resolvedCallbackUrl;
@@ -40,7 +50,7 @@ class MtnMomoService
             ->withHeaders($headers)
             ->post('/collection/v1_0/requesttopay', array_filter([
                 'amount' => number_format((float) $payment->amount, 2, '.', ''),
-                'currency' => strtoupper((string) $payment->currency),
+                'currency' => $currency,
                 'externalId' => $payment->receipt_number,
                 'payer' => [
                     'partyIdType' => 'MSISDN',
@@ -61,7 +71,7 @@ class MtnMomoService
             'callback_url' => $resolvedCallbackUrl,
             'request_payload' => [
                 'amount' => number_format((float) $payment->amount, 2, '.', ''),
-                'currency' => strtoupper((string) $payment->currency),
+                'currency' => $currency,
                 'external_id' => $payment->receipt_number,
             ],
         ];
@@ -139,6 +149,33 @@ class MtnMomoService
         return $accessToken;
     }
 
+    private function isSandbox(): bool
+    {
+        return strtolower((string) config('services.mtn_momo.target_environment')) === 'sandbox';
+    }
+
+    private function resolveCallbackUrl(?string $callbackUrl): ?string
+    {
+        $candidate = is_string($callbackUrl) ? trim($callbackUrl) : '';
+
+        if ($candidate === '') {
+            return null;
+        }
+
+        $scheme = parse_url($candidate, PHP_URL_SCHEME);
+        $host = parse_url($candidate, PHP_URL_HOST);
+
+        if ($scheme !== 'https') {
+            return null;
+        }
+
+        if (! is_string($host) || $host === '' || in_array(strtolower($host), ['localhost', '127.0.0.1'], true)) {
+            return null;
+        }
+
+        return $candidate;
+    }
+
     private function mapMomoStatus(string $status): string
     {
         return match (strtoupper($status)) {
@@ -154,6 +191,10 @@ class MtnMomoService
             ?? data_get($payload, 'reason')
             ?? data_get($payload, 'details')
             ?? data_get($payload, 'error');
+
+        if ($message === 'invalid_client') {
+            return 'MTN sandbox rejected the API user/API key combination (invalid_client). Regenerate the Collection sandbox API user and API key from MTN MoMo Developer, confirm the Collection subscription primary key is used, then update the environment values.';
+        }
 
         return is_string($message) && $message !== '' ? $message : $fallback;
     }

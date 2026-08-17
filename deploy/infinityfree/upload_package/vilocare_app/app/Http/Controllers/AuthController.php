@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Services\SmsService;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,10 @@ use Throwable;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        private readonly SmsService $smsService
+    ) {
+    }
 
     protected $redirectTo = '/dashboard';
 
@@ -51,7 +56,7 @@ class AuthController extends Controller
                 return redirect()->route('password.change.edit');
             }
 
-            return redirect($this->redirectTo);
+            return redirect($user->isReceptionist() ? route('payments.index') : $this->redirectTo);
         }
 
         return back()
@@ -274,34 +279,16 @@ class AuthController extends Controller
 
     private function smsIsConfigured(): bool
     {
-        return filled(config('services.twilio.sid'))
-            && filled(config('services.twilio.token'))
-            && (filled(config('services.twilio.from')) || filled(config('services.twilio.messaging_service_sid')));
+        return $this->smsService->isConfigured();
     }
 
     private function dispatchSms(string $phoneNumber, string $message): void
     {
-        $sid = (string) config('services.twilio.sid');
-        $token = (string) config('services.twilio.token');
+        $result = $this->smsService->send($phoneNumber, $message);
 
-        $payload = [
-            'To' => $phoneNumber,
-            'Body' => $message,
-        ];
-
-        if (filled(config('services.twilio.messaging_service_sid'))) {
-            $payload['MessagingServiceSid'] = (string) config('services.twilio.messaging_service_sid');
-        } else {
-            $payload['From'] = (string) config('services.twilio.from');
-        }
-
-        $response = Http::asForm()
-            ->withBasicAuth($sid, $token)
-            ->post("https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json", $payload);
-
-        if ($response->failed()) {
+        if (($result['status'] ?? 'failed') !== 'sent') {
             throw ValidationException::withMessages([
-                'identifier' => ['SMS delivery failed. Please verify the Twilio configuration and phone number format.'],
+                'identifier' => [$result['detail'] ?? 'SMS delivery failed. Please verify the SMS configuration and phone number format.'],
             ]);
         }
     }

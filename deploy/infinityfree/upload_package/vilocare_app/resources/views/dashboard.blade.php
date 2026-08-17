@@ -24,10 +24,14 @@
             <div>
                 <h3>Filters</h3>
             </div>
-            @if($filterConfig['state_id']['available'] && $filterConfig['county_id']['available'] && $filterConfig['facility_id']['available'])
-                <span class="filter-state is-ready">Location ready</span>
-            @else
-                <span class="filter-state">Add location columns to activate all location filters</span>
+            @if($supportAccess)
+                <a href="{{ route('ai.assistant.index') }}" class="dashboard-chatbot-button">
+                    <span class="dashboard-chatbot-icon">AI</span>
+                    <span>ViLoCare ChatBot</span>
+                    <svg viewBox="0 0 20 20" aria-hidden="true">
+                        <path d="M7 4l6 6-6 6" />
+                    </svg>
+                </a>
             @endif
         </div>
 
@@ -177,96 +181,6 @@
         </div>
     </section>
 
-    @if($supportAccess)
-        <section class="support-grid">
-            <article class="support-card support-card-compact">
-                <div class="card-head support-head">
-                    <div>
-                        <span class="support-kicker">Activity</span>
-                        <h3>Notifications</h3>
-                    </div>
-                    <span>Recent email, SMS, and assistant activity</span>
-                </div>
-                <div class="support-list">
-                    @forelse($recentNotifications as $notification)
-                        <div class="support-list-item">
-                            <div class="support-list-copy">
-                                <div class="support-icon support-icon-{{ strtolower($notification->channel) }}">
-                                    {{ strtoupper(substr($notification->channel, 0, 2)) }}
-                                </div>
-                                <div>
-                                    <strong>{{ ucwords(str_replace('_', ' ', $notification->category)) }}</strong>
-                                    <p>{{ strtoupper($notification->channel) }} to {{ $notification->recipient ?: 'system' }}</p>
-                                </div>
-                            </div>
-                            <div class="support-status status-{{ strtolower($notification->status) }}">
-                                {{ ucfirst($notification->status) }}
-                            </div>
-                        </div>
-                    @empty
-                        <div class="support-empty">No notification logs yet. Delivery history will appear here after reminders or alerts are triggered.</div>
-                    @endforelse
-                </div>
-            </article>
-
-            <article class="support-card support-card-compact">
-                <div class="card-head support-head">
-                    <div>
-                        <span class="support-kicker">Action</span>
-                        <h3>Quick Reminder</h3>
-                    </div>
-                    <span>Send a manual appointment reminder</span>
-                </div>
-                <form method="POST" action="{{ route('dashboard.support.reminder') }}" class="support-form">
-                    @csrf
-                    <div class="filter-field">
-                        <label for="appointment_id">Upcoming Appointment</label>
-                        <select id="appointment_id" name="appointment_id" class="form-select form-select-sm">
-                            @forelse($upcomingAppointments as $appointment)
-                                <option value="{{ $appointment->appointment_id }}">
-                                    {{ optional($appointment->appointment_date)->format('d M Y') }} - {{ trim(($appointment->patient->first_name ?? '') . ' ' . ($appointment->patient->last_name ?? '')) }}
-                                </option>
-                            @empty
-                                <option value="">No upcoming appointments</option>
-                            @endforelse
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-outline-primary btn-sm" @disabled($upcomingAppointments->isEmpty())>Send Reminder</button>
-                </form>
-            </article>
-
-            <article class="support-card support-card-wide">
-                <div class="card-head support-head">
-                    <div>
-                        <span class="support-kicker">Assistant</span>
-                        <h3>ViLoCare ChatBot</h3>
-                    </div>
-                    <span>{{ $assistantEnabled ? 'Dashboard-only support assistant' : 'OpenAI key required to enable replies' }}</span>
-                </div>
-                <div class="assistant-card-shell">
-                    <div class="assistant-thread" id="assistantThread">
-                        <div class="assistant-bubble assistant-bubble-system">
-                            Ask about dashboard metrics, report exports, or what each card means. Clinical advice is intentionally blocked.
-                        </div>
-                    </div>
-                    <div class="assistant-suggestions">
-                        <button type="button" class="assistant-chip" data-question="Summarize this dashboard for me.">Summarize dashboard</button>
-                        <button type="button" class="assistant-chip" data-question="What reports can I export from ViLoCare?">Report exports</button>
-                        <button type="button" class="assistant-chip" data-question="Explain the VL due and EAC cards.">Explain cards</button>
-                    </div>
-                    <form id="assistantForm" class="assistant-form">
-                        @csrf
-                        <textarea id="assistantQuestion" class="form-control" rows="3" placeholder="Ask a dashboard question..." @disabled(!$assistantEnabled)></textarea>
-                        <div class="assistant-actions">
-                            <small id="assistantStatus">{{ $assistantEnabled ? 'Administrator and clinician use only.' : 'Set OPENAI_API_KEY to enable this assistant.' }}</small>
-                            <button type="submit" class="btn btn-dark btn-sm" @disabled(!$assistantEnabled)>Send</button>
-                        </div>
-                    </form>
-                </div>
-            </article>
-        </section>
-    @endif
-
     <section class="insight-grid">
         <article class="insight-card insight-wide">
             <div class="card-head">
@@ -324,8 +238,6 @@
 
 @push('scripts')
 <script>
-    const supportChatUrl = @json(route('dashboard.support.chat'));
-    const csrfToken = @json(csrf_token());
     const dashboardPalette = {
         teal: '#0f9f8f',
         green: '#2f8f46',
@@ -458,87 +370,5 @@
         }
     });
 
-    const assistantForm = document.getElementById('assistantForm');
-    const assistantQuestion = document.getElementById('assistantQuestion');
-    const assistantThread = document.getElementById('assistantThread');
-    const assistantStatus = document.getElementById('assistantStatus');
-    const assistantChips = document.querySelectorAll('.assistant-chip');
-    const filterForm = document.querySelector('.dashboard-filters');
-
-    function appendAssistantBubble(text, kind) {
-        if (!assistantThread) {
-            return;
-        }
-
-        const bubble = document.createElement('div');
-        bubble.className = `assistant-bubble assistant-bubble-${kind}`;
-        bubble.textContent = text;
-        assistantThread.appendChild(bubble);
-        assistantThread.scrollTop = assistantThread.scrollHeight;
-    }
-
-    function currentFilters() {
-        if (!filterForm) {
-            return {};
-        }
-
-        const data = new FormData(filterForm);
-        return {
-            state_id: data.get('state_id') || '',
-            county_id: data.get('county_id') || '',
-            facility_id: data.get('facility_id') || '',
-            due_date: data.get('due_date') || '',
-            month: data.get('month') || '',
-            quarter: data.get('quarter') || '',
-            year: data.get('year') || '',
-        };
-    }
-
-    async function sendAssistantQuestion(question) {
-        appendAssistantBubble(question, 'user');
-        if (assistantStatus) {
-            assistantStatus.textContent = 'Thinking...';
-        }
-
-        const response = await fetch(supportChatUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                question,
-                filters: currentFilters()
-            })
-        });
-
-        const payload = await response.json();
-        appendAssistantBubble(payload.answer || 'No assistant response received.', response.ok ? 'assistant' : 'system');
-
-        if (assistantStatus) {
-            assistantStatus.textContent = response.ok ? 'Ready for the next dashboard question.' : 'The assistant could not complete that request.';
-        }
-    }
-
-    assistantChips.forEach((chip) => {
-        chip.addEventListener('click', () => {
-            if (assistantQuestion) {
-                assistantQuestion.value = chip.dataset.question || '';
-            }
-        });
-    });
-
-    assistantForm?.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const question = assistantQuestion?.value.trim();
-        if (!question) {
-            return;
-        }
-
-        assistantQuestion.value = '';
-        await sendAssistantQuestion(question);
-    });
 </script>
 @endpush

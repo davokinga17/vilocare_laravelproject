@@ -3,101 +3,43 @@
 <head>
     <meta charset="utf-8">
     <title>{{ $report['title'] }}</title>
-    <style>
-        body { font-family: DejaVu Sans, sans-serif; color: #1f2937; font-size: 11px; margin: 34px 26px 72px; }
-        .brand { width: 100%; border-bottom: 2px solid #1d4ed8; padding-bottom: 12px; margin-bottom: 16px; }
-        .brand td { vertical-align: top; }
-        .logo { width: 170px; max-height: 62px; object-fit: contain; }
-        .title { font-size: 22px; font-weight: 700; margin: 0; }
-        .subtitle { margin: 4px 0 0; color: #4b5563; }
-        .meta { text-align: right; font-size: 10px; }
-        .cards { width: 100%; margin: 16px 0; }
-        .cards td { width: 25%; border: 1px solid #d9e2ec; border-radius: 8px; padding: 10px; background: #f8fbfd; }
-        .cards strong { display: block; font-size: 16px; margin-top: 4px; }
-        .barcode-box { width: 180px; text-align: center; }
-        .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th, .data-table td { border: 1px solid #dbe4ee; padding: 6px 7px; }
-        .data-table th { background: #12263a; color: #fff; font-size: 10px; }
-        .data-table tr:nth-child(even) td { background: #f8fafc; }
-        .footer { position: fixed; bottom: -40px; left: 0; right: 0; height: 40px; color: #6b7280; font-size: 10px; border-top: 1px solid #dbe4ee; padding-top: 8px; }
-    </style>
+    @php
+        $reportOrientation = 'landscape';
+    @endphp
+    @include('reports.partials.pdf_styles')
 </head>
 <body>
-    <table class="brand">
-        <tr>
-            <td style="width: 190px;">
-                @if(!empty($report['logo_image']))
-                    <img src="{{ $report['logo_image'] }}" alt="ViLoCare Logo" class="logo">
-                @else
-                    {!! $report['logo_svg'] !!}
-                @endif
-            </td>
-            <td>
-                <p class="title">{{ $report['title'] }}</p>
-                <p class="subtitle">Standardized virologic report with suppression, lab dates, and facility coverage.</p>
-            </td>
-            <td class="meta">
-                <div>Reference: <strong>{{ $report['reference'] }}</strong></div>
-                <div>Generated: {{ $report['generated_at_human'] }}</div>
-                <div>Records: {{ number_format($report['record_count']) }}</div>
-            </td>
-        </tr>
-    </table>
-
-    <table class="cards" cellspacing="10">
-        <tr>
-            @foreach($report['summary_cards'] as $card)
-                <td>
-                    <span>{{ $card['label'] }}</span>
-                    <strong>{{ $card['value'] }}</strong>
-                </td>
-            @endforeach
-        </tr>
-    </table>
-
-    <div class="barcode-box" style="margin: 0 0 14px auto;">
-        {!! $report['barcode_svg'] !!}
+    @include('reports.partials.pdf_masthead')
+    <div class="report-title-block">
+        <h1>ViLoCare Viral Load Report</h1>
+        <p>Clinical virologic results, suppression status and facility coverage</p>
     </div>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>ART Number</th>
-                <th>Full Name</th>
-                <th>VL Status</th>
-                <th>Result (cp/ml)</th>
-                <th>Result (log)</th>
-                <th>Sample Date</th>
-                <th>Result Date</th>
-                <th>Indication</th>
-                <th>State</th>
-                <th>County</th>
-                <th>Facility</th>
-            </tr>
-        </thead>
+    <table class="report-meta-band"><tr>
+        <td><span>Report Reference</span><strong>{{ $report['reference'] }}</strong></td>
+        <td><span>Generated</span><strong>{{ $report['generated_at_human'] }}</strong></td>
+        <td><span>Records</span><strong>{{ number_format($report['record_count']) }}</strong></td>
+        <td><span>Verification URL</span><strong>{{ $report['verification_url'] }}</strong></td>
+    </tr></table>
+
+    <table class="kpi-grid"><tr>
+        @foreach($report['summary_cards'] as $index => $card)
+            <td><table class="kpi-layout"><tr><td style="width:37px"><span class="kpi-icon">{{ ['PT','VL','SP','FC'][$index] ?? 'KP' }}</span></td><td class="kpi-copy"><span>{{ $card['label'] }}</span><strong>{{ $card['value'] }}</strong></td></tr></table></td>
+        @endforeach
+    </tr></table>
+
+    <p class="section-heading"><span class="section-icon">VL</span>Viral Load Results Register</p>
+    <table class="data-table record-table">
+        <thead><tr><th style="width:8%">ART Number</th><th style="width:12%">Patient Name</th><th style="width:8%">VL Status</th><th style="width:8%">Result cp/mL</th><th style="width:7%">Result log</th><th style="width:8%">Sample Date</th><th style="width:8%">Result Date</th><th style="width:11%">Indication</th><th style="width:8%">State</th><th style="width:9%">County</th><th style="width:13%">Facility</th></tr></thead>
         <tbody>
             @forelse($results as $result)
-                <tr>
-                    <td>{{ $result->art_number }}</td>
-                    <td>{{ $result->full_name }}</td>
-                    <td>{{ $result->viral_load_status }}</td>
-                    <td>{{ $result->result_cpml ?? 'N/A' }}</td>
-                    <td>{{ $result->result_log ?? 'N/A' }}</td>
-                    <td>{{ $result->sample_date ?? 'N/A' }}</td>
-                    <td>{{ $result->result_date ?? 'N/A' }}</td>
-                    <td>{{ $result->vl_testing_indication ?: 'N/A' }}</td>
-                    <td>{{ $result->state_name ?? 'Unassigned' }}</td>
-                    <td>{{ $result->county_name ?? 'Unassigned' }}</td>
-                    <td>{{ $result->facility_name ?? 'Unassigned' }}</td>
-                </tr>
+                <tr><td>{{ $result->art_number }}</td><td class="metric-name">{{ $result->full_name }}</td><td class="{{ $result->viral_load_status === 'Suppressed' ? 'status-good' : 'status-alert' }}">{{ $result->viral_load_status }}</td><td>{{ $result->result_cpml ?? 'N/A' }}</td><td>{{ $result->result_log ?? 'N/A' }}</td><td>{{ $result->sample_date ?? 'N/A' }}</td><td>{{ $result->result_date ?? 'N/A' }}</td><td>{{ $result->vl_testing_indication ?: 'N/A' }}</td><td>{{ $result->state_name ?? 'Unassigned' }}</td><td>{{ $result->county_name ?? 'Unassigned' }}</td><td>{{ $result->facility_name ?? 'Unassigned' }}</td></tr>
             @empty
-                <tr>
-                    <td colspan="11" style="text-align: center;">No viral load records matched the selected filters.</td>
-                </tr>
+                <tr><td colspan="11" class="empty-row">No viral load records matched the selected filters.</td></tr>
             @endforelse
         </tbody>
     </table>
 
-    <div class="footer">{{ $report['footer_text'] }}</div>
+    <div class="running-footer"><table><tr><td>Confidential - For Official Use Only</td><td>Authorized Signature: ____________________</td><td>Page <span class="page-number"></span></td></tr></table></div>
 </body>
 </html>

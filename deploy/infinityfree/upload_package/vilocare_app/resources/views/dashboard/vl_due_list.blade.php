@@ -115,6 +115,7 @@
                         @endif
                         <th>Last EAC Session 3 Date</th>
                         <th>VL Due Date</th>
+                        <th>SMS</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -135,10 +136,21 @@
                             @endif
                             <td>{{ $patient->last_session_date ?? 'N/A' }}</td>
                             <td>{{ $patient->due_date ?? 'N/A' }}</td>
+                            <td>
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    data-sms-action="{{ route('sms.vl_due.send_reminder', $patient->eac_id) }}"
+                                    data-sms-title="Repeat VL Reminder SMS"
+                                    data-sms-hint="Confirm the patient's number and adjust the repeat viral load reminder before sending."
+                                    data-sms-phone="{{ $patient->phone }}"
+                                    data-sms-message="{{ app(\App\Services\NotificationService::class)->buildDueVlReminderMessage($patient, $patient->due_date) }}"
+                                >Send SMS</button>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ 6 + (int) $filterConfig['state_id']['available'] + (int) $filterConfig['county_id']['available'] + (int) $filterConfig['facility_id']['available'] }}" class="text-center text-muted py-4">
+                            <td colspan="{{ 7 + (int) $filterConfig['state_id']['available'] + (int) $filterConfig['county_id']['available'] + (int) $filterConfig['facility_id']['available'] }}" class="text-center text-muted py-4">
                                 No patients matched the selected VL due filters.
                             </td>
                         </tr>

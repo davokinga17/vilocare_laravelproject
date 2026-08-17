@@ -42,10 +42,26 @@ return [
         'messaging_service_sid' => env('TWILIO_MESSAGING_SERVICE_SID'),
     ],
 
-    'openai' => [
-        'api_key' => env('OPENAI_API_KEY'),
-        'model' => env('OPENAI_MODEL', 'gpt-5.5-mini'),
-        'endpoint' => env('OPENAI_RESPONSES_ENDPOINT', 'https://api.openai.com/v1/responses'),
+    'africastalking' => [
+        'base_url' => env('AFRICASTALKING_BASE_URL', 'https://api.africastalking.com'),
+        'sandbox_base_url' => env('AFRICASTALKING_SANDBOX_BASE_URL', 'https://api.sandbox.africastalking.com'),
+        'username' => env('AFRICASTALKING_USERNAME'),
+        'api_key' => env('AFRICASTALKING_API_KEY'),
+        'from' => env('AFRICASTALKING_FROM'),
+        'sandbox' => (bool) env('AFRICASTALKING_SANDBOX', false),
+    ],
+
+    'openrouter' => [
+        'api_key' => env('OPENROUTER_API_KEY'),
+        'model' => env('OPENROUTER_MODEL', 'openrouter/free'),
+        'endpoint' => env('OPENROUTER_ENDPOINT', 'https://openrouter.ai/api/v1/chat/completions'),
+        'site_url' => env('OPENROUTER_SITE_URL', env('APP_URL')),
+        'app_name' => env('OPENROUTER_APP_NAME', env('APP_NAME', 'ViLoCare')),
+    ],
+
+    'ollama' => [
+        'base_url' => env('OLLAMA_BASE_URL', 'http://127.0.0.1:11434'),
+        'model' => env('OLLAMA_MODEL', 'llama3.1:8b'),
     ],
 
     'recaptcha' => [
@@ -62,6 +78,24 @@ return [
         'target_environment' => env('MTN_MOMO_TARGET_ENVIRONMENT', 'sandbox'),
         'callback_url' => env('MTN_MOMO_CALLBACK_URL'),
         'timeout' => env('MTN_MOMO_TIMEOUT', 30),
+    ],
+
+    'pesapal' => [
+        'base_url' => env('PESAPAL_BASE_URL', 'https://cybqa.pesapal.com/pesapalv3/api'),
+        'consumer_key' => env('PESAPAL_CONSUMER_KEY'),
+        'consumer_secret' => env('PESAPAL_CONSUMER_SECRET'),
+        'ipn_notification_id' => env('PESAPAL_IPN_NOTIFICATION_ID'),
+        'timeout' => env('PESAPAL_TIMEOUT', 30),
+    ],
+
+    'mastercard' => [
+        'base_url' => env('MASTERCARD_BASE_URL', 'https://ap-gateway.mastercard.com'),
+        'merchant_id' => env('MASTERCARD_MERCHANT_ID'),
+        'api_password' => env('MASTERCARD_API_PASSWORD'),
+        'api_version' => env('MASTERCARD_API_VERSION', '100'),
+        'merchant_name' => env('MASTERCARD_MERCHANT_NAME', env('APP_NAME', 'ViLoCare')),
+        'merchant_url' => env('MASTERCARD_MERCHANT_URL', env('APP_URL')),
+        'timeout' => env('MASTERCARD_TIMEOUT', 30),
     ],
 
 ];

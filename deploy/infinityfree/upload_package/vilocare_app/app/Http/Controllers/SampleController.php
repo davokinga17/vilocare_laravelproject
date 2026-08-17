@@ -15,22 +15,64 @@ class SampleController extends Controller
     ) {
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $samples = SampleCollection::with(['patient', 'rejections'])
-            ->orderByDesc('collection_date')
-            ->paginate(10);
+        $query = SampleCollection::with(['patient', 'rejections']);
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            $query->where(function ($builder) use ($search) {
+                $builder->where('sample_id', 'like', '%' . $search . '%')
+                    ->orWhereHas('patient', function ($patientQuery) use ($search) {
+                        $patientQuery->where('art_number', 'like', '%' . $search . '%')
+                            ->orWhere('first_name', 'like', '%' . $search . '%')
+                            ->orWhere('last_name', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('sample_type')) {
+            $query->where('sample_type', $request->input('sample_type'));
+        }
+
+        $samples = $query->orderByDesc('collection_date')
+            ->paginate(10)
+            ->withQueryString();
 
         $rejections = SampleRejection::with(['sample.patient'])
             ->orderByDesc('rejection_date')
             ->limit(10)
             ->get();
 
+        $sampleTypes = SampleCollection::query()
+            ->whereNotNull('sample_type')
+            ->where('sample_type', '!=', '')
+            ->distinct()
+            ->orderBy('sample_type')
+            ->pluck('sample_type');
+
+        $rejectableSamples = SampleCollection::with('patient')
+            ->where(function ($builder) {
+                $builder->whereNull('status')->orWhere('status', '!=', 'Rejected');
+            })
+            ->orderByDesc('collection_date')
+            ->limit(100)
+            ->get();
+
+        return view('samples.index', compact('samples', 'rejections', 'sampleTypes', 'rejectableSamples'));
+    }
+
+    public function create()
+    {
         $patients = Patient::orderBy('first_name')
             ->orderBy('last_name')
             ->get(['patient_id', 'art_number', 'first_name', 'last_name']);
 
-        return view('samples.index', compact('samples', 'rejections', 'patients'));
+        return view('samples.create', compact('patients'));
     }
 
     public function store(Request $request)

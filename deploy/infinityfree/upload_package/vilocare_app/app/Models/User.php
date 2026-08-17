@@ -73,6 +73,11 @@ class User extends Authenticatable
         return $this->role === 'Clinician';
     }
 
+    public function isReceptionist(): bool
+    {
+        return $this->role === 'Receptionist';
+    }
+
     public function canManageUsers(): bool
     {
         return $this->isAdministrator() || $this->isClinician();
@@ -81,7 +86,7 @@ class User extends Authenticatable
     public function manageableRoles(): array
     {
         if ($this->isAdministrator()) {
-            return ['Administrator', 'Clinician', 'Lab Technician', 'Data Clerk'];
+            return ['Administrator', 'Clinician', 'Lab Technician', 'Data Clerk', 'Receptionist'];
         }
 
         if ($this->isClinician()) {

@@ -84,6 +84,12 @@ class ReportController extends Controller
         $filterOptions = $this->getFilterOptions($filterConfig);
         $activeFilters = $this->activeFilters($request);
         $summary = $this->summaryMetrics($request, $filterConfig);
+        $analytics = [
+            'patientSexMix' => $this->patientSexMix($request, $filterConfig),
+            'viralLoadStatusMix' => $this->viralLoadStatusMix($summary['suppressed_raw'], $summary['unsuppressed_raw']),
+            'testingIndications' => $this->testingIndications($request, $filterConfig),
+            'facilityCoverage' => $this->facilityCoverage($request, $filterConfig),
+        ];
         $report = $this->createReportManifest(
             'Summary Report',
             $activeFilters,
@@ -93,7 +99,7 @@ class ReportController extends Controller
         );
 
         return Excel::download(
-            new ReportSummaryExport($summary, $report),
+            new ReportSummaryExport($summary, $analytics, $report),
             'vilocare_summary_report_' . Str::lower($report['reference']) . '.xlsx'
         );
     }
@@ -653,8 +659,10 @@ class ReportController extends Controller
 
         $report['verification_url'] = route('reports.verify.reference', ['reference' => $reference]);
         $report['barcode_svg'] = $this->barcodeSvg($reference);
-        $report['logo_image'] = extension_loaded('gd') ? $this->logoImageDataUri() : null;
+        $report['logo_image'] = $this->imageDataUri(public_path('images/vilocarelogo-report.jpg'));
         $report['logo_path'] = public_path('images/vilocarelogo.png');
+        $report['ministry_logo_image'] = $this->imageDataUri(public_path('images/ministry-of-health-emblem-report.jpg'));
+        $report['ministry_logo_path'] = public_path('images/ministry-of-health-emblem.png');
         $report['logo_svg'] = $this->logoSvg();
         $report['footer_text'] = 'Report produced by ViLoCare on ' . $report['generated_at_human'];
 
@@ -800,10 +808,8 @@ class ReportController extends Controller
 SVG;
     }
 
-    private function logoImageDataUri(): ?string
+    private function imageDataUri(string $path): ?string
     {
-        $path = public_path('images/vilocarelogo.png');
-
         if (! is_file($path)) {
             return null;
         }

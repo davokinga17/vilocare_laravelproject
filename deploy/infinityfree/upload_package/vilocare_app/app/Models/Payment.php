@@ -17,6 +17,7 @@ class Payment extends Model
         'eac_id',
         'vl_id',
         'created_by',
+        'accepted_by',
         'payment_type',
         'service_label',
         'amount',
@@ -26,6 +27,7 @@ class Payment extends Model
         'receipt_number',
         'external_reference',
         'paid_at',
+        'accepted_at',
         'notes',
         'meta',
     ];
@@ -33,6 +35,7 @@ class Payment extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'paid_at' => 'datetime',
+        'accepted_at' => 'datetime',
         'meta' => 'array',
     ];
 
@@ -54,6 +57,11 @@ class Payment extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function acceptedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'accepted_by');
     }
 
     public function isPaid(): bool

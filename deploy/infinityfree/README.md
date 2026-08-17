@@ -1,111 +1,108 @@
 # ViloCare InfinityFree Deployment
 
-This folder contains the practical files to help deploy ViloCare to InfinityFree using the domain `vilocare.infinityfree.io`.
+This folder contains two InfinityFree deployment layouts:
 
-## Recommended remote folder structure
+- `upload_package`: split layout for `/htdocs` + `/vilocare_app`
+- `upload_package_htdocs`: full-app layout where everything is uploaded inside `/htdocs`
 
-Create this layout in your InfinityFree account:
+Your current deployment target is the second option, because the live InfinityFree setup works only when the full app is inside `htdocs`.
 
-```text
-/vilocare_app
-  app
-  bootstrap
-  config
-  database
-  public
-  resources
-  routes
-  storage
-  vendor
-  .env
-  artisan
+## Current InfinityFree constraints
 
-/htdocs
-  index.php
-  .htaccess
-  build
-  css
-  images
-  storage
-  uploads
-  ...
-```
+As of May 12, 2026, InfinityFree's Laravel guidance says free hosting does not provide SSH or server-side command execution for `composer` or `artisan`. Prepare everything locally, then upload the finished files.
 
-## What to upload where
+Practical implications for ViloCare:
 
-Upload these project items to `/vilocare_app`:
+- run `composer install --no-dev` locally
+- build frontend assets locally with `npm run build`
+- upload the generated `vendor` folder
+- keep `QUEUE_CONNECTION=sync`
+- keep `CACHE_STORE=file`
+- keep `SESSION_DRIVER=file`
+- do not depend on Redis, workers, or server cron jobs
 
-- `app`
-- `bootstrap`
-- `config`
-- `database`
-- `resources`
-- `routes`
-- `storage`
-- `vendor`
-- `artisan`
-- `composer.json`
-- `composer.lock`
-- `.env`
+## Local preparation
 
-Upload the contents of your local `public` folder to `/htdocs`:
+Run these commands from the Laravel project root before packaging:
 
-- `.htaccess`
-- `index.php`
-- `build` after running `npm run build`
-- `css`
-- `images`
-- `storage`
-- `uploads`
-- icons and manifest files
-
-Also upload this deployment-adjusted front controller:
-
-- `deploy/infinityfree/htdocs-index.php` -> remote `/htdocs/index.php`
-
-## Important local preparation steps
-
-Run these locally before uploading:
-
-```bash
-php artisan storage:link
+```powershell
+composer install --no-dev
 npm install
 npm run build
+php artisan storage:link
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
 ```
 
-## Replace the public entry point
+## Build the all-in-htdocs package
 
-Do not use the default Laravel `public/index.php` as-is on InfinityFree.
+For the layout that keeps every deployable file inside InfinityFree `htdocs`, run:
 
-Copy [htdocs-index.php](./htdocs-index.php) into remote `/htdocs/index.php`.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\infinityfree\build-package-htdocs.ps1
+```
 
-That file expects the Laravel app to live in `/vilocare_app`.
+That script recreates:
 
-## Production environment file
+- `deploy/infinityfree/upload_package_htdocs/htdocs`
+- `deploy/infinityfree/htdocs_full_app_upload.zip`
 
-Use [env.production.example](./env.production.example) as your starting point for the production `.env`.
+## Resulting live folder structure
 
-Set:
+Upload the contents of `deploy/infinityfree/upload_package_htdocs/htdocs` directly into remote `/htdocs`.
 
-- `APP_URL=https://vilocare.infinityfree.io`
-- the InfinityFree database credentials
-- fresh production secrets for mail, Twilio, OpenAI, and reCAPTCHA
-- the MTN MoMo variables if you want live MoMo payments
+That package contains:
 
-## MTN MoMo note
+```text
+/htdocs
+  app
+  bootstrap
+  config
+  database
+  resources
+  routes
+  storage
+  vendor
+  .htaccess
+  index.php
+  artisan
+  composer.json
+  composer.lock
+  build
+  css
+  images
+  uploads
+  .env.example
+  ...
+```
 
-The app now supports MTN Mobile Money request-to-pay. For production:
+## Front controller for all-in-htdocs
 
-- `MTN_MOMO_BASE_URL` should match the environment MTN gives you
-- `MTN_MOMO_SUBSCRIPTION_KEY`, `MTN_MOMO_API_USER`, and `MTN_MOMO_API_KEY` must come from the MTN developer/partner portal
-- `MTN_MOMO_TARGET_ENVIRONMENT` must match the MTN environment name
-- the callback host must be on the same domain configured for the API user
+When the full app lives in `/htdocs`, use `deploy/infinityfree/htdocs-root-index.php` as the remote `/htdocs/index.php`.
 
-If callbacks are not yet working, the app can still refresh MTN payment status manually from the payment details page.
+That file expects the Laravel app root and public assets to live in the same directory.
 
-## Security reminder
+## Production env file
 
-Do not reuse the current local secrets in production. Rotate all exposed credentials before going live.
+Use `deploy/infinityfree/env.production.example` as the starting point for the live `.env`.
+
+The `build-package-htdocs.ps1` script also copies it into the package as:
+
+- `upload_package_htdocs/htdocs/.env.example`
+
+Before going live:
+
+- rename `.env.example` to `.env` on the server, or upload a prepared `.env`
+- generate a fresh `APP_KEY`
+- set the real InfinityFree database host, name, username, and password
+- set real SMTP, Twilio, OpenAI, reCAPTCHA, and MTN MoMo credentials
+- disable any sandbox or simulator settings you do not want in production
+
+## Local safety
+
+These deploy scripts only create copies under `deploy/infinityfree`. They do not restructure or overwrite the local localhost app, so local development keeps working.
+
+## Security
+
+Do not commit live production secrets into this repository. If any secrets were previously saved here, rotate them before deployment.

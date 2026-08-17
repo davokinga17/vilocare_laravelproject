@@ -8,10 +8,45 @@ use App\Models\Payment;
 
 class EACController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $sessions = EACSession::with(['patient', 'payments'])->orderBy('session_date')->get();
-        return view('eac.index', compact('sessions'));
+        $query = EACSession::with(['patient', 'payments']);
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            $query->whereHas('patient', function ($patientQuery) use ($search) {
+                $patientQuery->where('art_number', 'like', '%' . $search . '%')
+                    ->orWhere('first_name', 'like', '%' . $search . '%')
+                    ->orWhere('last_name', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($request->filled('session_number')) {
+            $query->where('session_number', $request->integer('session_number'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('completion_status', $request->input('status'));
+        }
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('session_date', '>=', $request->input('from_date'));
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('session_date', '<=', $request->input('to_date'));
+        }
+
+        $sessions = $query->orderByDesc('session_date')->orderByDesc('eac_id')->paginate(10)->withQueryString();
+
+        $metrics = [
+            'active_clients' => EACSession::query()->where('completion_status', '!=', 'Completed')->distinct('patient_id')->count('patient_id'),
+            'session_one_due' => EACSession::query()->where('session_number', 1)->where('completion_status', 'Pending')->count(),
+            'pending' => EACSession::query()->where('completion_status', 'Pending')->count(),
+            'completed' => EACSession::query()->where('completion_status', 'Completed')->count(),
+        ];
+
+        return view('eac.index', compact('sessions', 'metrics'));
     }
 
     public function complete($id)

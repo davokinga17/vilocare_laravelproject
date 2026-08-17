@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Exports\DueForVlExport;
-use App\Models\NotificationLog;
 use App\Models\Patient;
+use App\Services\ChatbotService;
 use App\Services\DashboardSummaryService;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
@@ -16,7 +16,8 @@ use Maatwebsite\Excel\Facades\Excel;
 class DashboardController extends Controller
 {
     public function __construct(
-        private readonly DashboardSummaryService $dashboardSummaryService
+        private readonly DashboardSummaryService $dashboardSummaryService,
+        private readonly ChatbotService $chatbotService
     ) {
     }
 
@@ -113,12 +114,9 @@ class DashboardController extends Controller
         $dueEAC = $totalDueEAC;
         $repeatVL = $totalDueRepeatVL;
         $supportSummary = $this->dashboardSummaryService->summary($activeFilters);
-        $recentNotifications = Schema::hasTable('notification_logs')
-            ? NotificationLog::query()->latest()->limit(6)->get()
-            : collect();
-        $upcomingAppointments = $supportSummary['upcomingAppointments'] ?? collect();
         $supportAccess = (bool) $request->user()?->canManageUsers();
-        $assistantEnabled = filled(config('services.openai.api_key'));
+        $assistantEnabled = $this->chatbotService->isConfigured();
+        $assistantProvider = $this->chatbotService->providerLabel();
 
         return view('dashboard', compact(
             'totalPatients',
@@ -149,10 +147,9 @@ class DashboardController extends Controller
             'filterOptions',
             'activeFilters',
             'filterQuery',
-            'recentNotifications',
-            'upcomingAppointments',
             'supportAccess',
-            'assistantEnabled'
+            'assistantEnabled',
+            'assistantProvider'
         ));
     }
 
@@ -287,6 +284,7 @@ class DashboardController extends Controller
         $baseQuery = DB::table('eac_sessions as es')
             ->selectRaw("
                 es.patient_id,
+                MAX(es.eac_id) as eac_id,
                 {$sessionDateExpression} as last_session_date,
                 {$dueDateExpression} as due_date
             ")
@@ -305,6 +303,7 @@ class DashboardController extends Controller
                 DB::raw($this->fullNameExpression() . ' as full_name'),
                 'p.sex',
                 'p.phone',
+                'due.eac_id',
                 'due.last_session_date',
                 'due.due_date',
             ]);

@@ -23,7 +23,8 @@ class PatientController extends Controller
             $query->where(function ($q) use ($request) {
                 $q->where('first_name', 'like', '%' . $request->search . '%')
                   ->orWhere('last_name', 'like', '%' . $request->search . '%')
-                  ->orWhere('art_number', 'like', '%' . $request->search . '%');
+                  ->orWhere('art_number', 'like', '%' . $request->search . '%')
+                  ->orWhere('phone', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -37,6 +38,10 @@ class PatientController extends Controller
             $query->where('age', $request->age);
         }
 
+        if ($request->filled('facility_id')) {
+            $query->where('facility_id', $request->input('facility_id'));
+        }
+
         // Retrieve filtered patients with pagination
         $patients = $query->paginate(10)->appends($request->query());
 
@@ -46,6 +51,7 @@ class PatientController extends Controller
             'search' => $request->search,
             'sex' => $request->sex,
             'age' => $request->age,
+            'facility_id' => $request->facility_id,
         ] + $this->locationOptions());
     }
 
@@ -108,10 +114,8 @@ class PatientController extends Controller
                 ->with('warning', 'No viral load result is available for printing yet.');
         }
 
-        if (! $this->hasPaidForPatientResult($patient->patient_id, 'result_print')) {
-            return redirect()
-                ->route('payments.create', ['patient_id' => $patient->patient_id, 'vl_id' => $result->vl_id, 'payment_type' => 'result_print'])
-                ->with('warning', 'Please record the print fee before printing patient results.');
+        if (! $this->hasPaidForPatientResult($patient->patient_id, $result->vl_id, 'result_print')) {
+            return back()->with('warning', 'Result printing is locked until Reception accepts the print-fee payment request.');
         }
 
         return view('patients.result_print', compact('patient', 'result'));
@@ -130,10 +134,8 @@ class PatientController extends Controller
                 ->with('warning', 'No viral load result is available for PDF export yet.');
         }
 
-        if (! $this->hasPaidForPatientResult($patient->patient_id, 'result_pdf')) {
-            return redirect()
-                ->route('payments.create', ['patient_id' => $patient->patient_id, 'vl_id' => $result->vl_id, 'payment_type' => 'result_pdf'])
-                ->with('warning', 'Please record the PDF fee before downloading patient results.');
+        if (! $this->hasPaidForPatientResult($patient->patient_id, $result->vl_id, 'result_pdf')) {
+            return back()->with('warning', 'Result PDF download is locked until Reception accepts the PDF-fee payment request.');
         }
 
         return Pdf::loadView('patients.result_pdf', compact('patient', 'result'))
@@ -310,10 +312,11 @@ class PatientController extends Controller
         return $rules;
     }
 
-    private function hasPaidForPatientResult(int $patientId, string $paymentType): bool
+    private function hasPaidForPatientResult(int $patientId, int $viralLoadId, string $paymentType): bool
     {
         return Payment::paid()
             ->where('patient_id', $patientId)
+            ->where('vl_id', $viralLoadId)
             ->where('payment_type', $paymentType)
             ->exists();
     }

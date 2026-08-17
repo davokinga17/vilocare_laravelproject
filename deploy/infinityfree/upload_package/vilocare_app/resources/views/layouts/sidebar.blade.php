@@ -16,19 +16,21 @@
     </div>
 
     <nav class="sidebar-menu">
-        <p class="sidebar-section">Overview</p>
+        <p class="sidebar-section">{{ $role === 'Receptionist' ? 'Reception Desk' : 'Overview' }}</p>
 
-        <a href="/dashboard" class="sidebar-link {{ request()->is('dashboard') ? 'is-active' : '' }}">
-            <span class="sidebar-icon">DB</span>
-            Dashboard
-        </a>
+        @if($role !== 'Receptionist')
+            <a href="/dashboard" class="sidebar-link {{ request()->is('dashboard') ? 'is-active' : '' }}">
+                <span class="sidebar-icon">DB</span>
+                Dashboard
+            </a>
 
-        <a href="{{ route('profile.edit') }}" class="sidebar-link {{ request()->is('profile') ? 'is-active' : '' }}">
-            <span class="sidebar-icon">PR</span>
-            My Profile
-        </a>
+            <a href="{{ route('profile.edit') }}" class="sidebar-link {{ request()->is('profile') ? 'is-active' : '' }}">
+                <span class="sidebar-icon">PR</span>
+                My Profile
+            </a>
 
-        <p class="sidebar-section">Clinical</p>
+            <p class="sidebar-section">Clinical</p>
+        @endif
 
         @if(in_array($role, ['Administrator', 'Clinician', 'Data Clerk', 'Data Officer']))
             <a href="/patients" class="sidebar-link {{ request()->is('patients') || request()->is('patients/*') ? 'is-active' : '' }}">
@@ -58,26 +60,37 @@
             </a>
         @endif
 
-        @if(in_array($role, ['Administrator', 'Data Clerk', 'Data Officer']))
+        @if(in_array($role, ['Administrator', 'Data Clerk', 'Data Officer', 'Receptionist']))
             <a href="/appointments" class="sidebar-link {{ request()->is('appointments') || request()->is('appointments/*') ? 'is-active' : '' }}">
                 <span class="sidebar-icon">AM</span>
                 Appointments
             </a>
         @endif
 
-        <p class="sidebar-section">Insights</p>
+        @if($role !== 'Receptionist')
+            <p class="sidebar-section">Insights</p>
+        @endif
 
-        @if(in_array($role, ['Administrator', 'Clinician', 'Data Clerk']))
+        @if(in_array($role, ['Administrator', 'Receptionist']))
             <a href="{{ route('payments.index') }}" class="sidebar-link {{ request()->is('payments') || request()->is('payments/*') ? 'is-active' : '' }}">
                 <span class="sidebar-icon">PY</span>
                 Payments
             </a>
         @endif
 
-        <a href="/reports" class="sidebar-link {{ request()->is('reports') || request()->is('reports/*') ? 'is-active' : '' }}">
-            <span class="sidebar-icon">RP</span>
-            Reports
-        </a>
+        @if($role !== 'Receptionist')
+            <a href="/reports" class="sidebar-link {{ request()->is('reports') || request()->is('reports/*') ? 'is-active' : '' }}">
+                <span class="sidebar-icon">RP</span>
+                Reports
+            </a>
+        @endif
+
+        @if(in_array($role, ['Administrator', 'Clinician']))
+            <a href="{{ route('ai.assistant.index') }}" class="sidebar-link {{ request()->is('ai-assistant') || request()->is('ai-assistant/*') ? 'is-active' : '' }}">
+                <span class="sidebar-icon">AI</span>
+                AI Assistant
+            </a>
+        @endif
 
         @if(in_array($role, ['Administrator', 'Clinician']))
             <p class="sidebar-section">Admin</p>

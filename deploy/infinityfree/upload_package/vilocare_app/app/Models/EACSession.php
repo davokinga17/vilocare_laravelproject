@@ -25,6 +25,12 @@ class EACSession extends Model
         'next_session_date'
     ];
 
+    protected $casts = [
+        'session_date' => 'date',
+        'next_session_date' => 'date',
+        'session_number' => 'integer',
+    ];
+
     // Define relationship to Patient
     public function patient()
     {
@@ -41,6 +47,14 @@ class EACSession extends Model
         return $this->payments
             ->where('payment_type', 'eac_consultation')
             ->where('status', 'paid')
+            ->isNotEmpty();
+    }
+
+    public function hasPendingConsultationFee(): bool
+    {
+        return $this->payments
+            ->where('payment_type', 'eac_consultation')
+            ->where('status', 'pending')
             ->isNotEmpty();
     }
 }

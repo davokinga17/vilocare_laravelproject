@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Mail\AppointmentReminderMail;
 use App\Mail\OperationalAlertMail;
 use App\Models\Appointment;
+use App\Models\EACSession;
 use App\Models\NotificationLog;
+use App\Models\Patient;
 use App\Models\SampleCollection;
 use App\Models\SampleRejection;
 use App\Models\User;
@@ -32,12 +34,7 @@ class NotificationService
         }
 
         $subject = $manual ? 'Manual appointment reminder sent' : 'New appointment reminder created';
-        $smsMessage = sprintf(
-            'ViLoCare reminder: %s has an appointment on %s.%s',
-            trim($patient->first_name . ' ' . $patient->last_name),
-            Carbon::parse($appointment->appointment_date)->format('d M Y'),
-            $appointment->reason ? ' Reason: ' . $appointment->reason : ''
-        );
+        $smsMessage = $this->buildAppointmentReminderMessage($appointment);
 
         $this->sendMailables(
             $this->emailRecipients(),
@@ -66,6 +63,147 @@ class NotificationService
                 'manual' => $manual,
             ]
         );
+    }
+
+    public function sendDueVlReminder(Patient $patient, Carbon|string $dueDate, ?User $actor = null): void
+    {
+        $date = $dueDate instanceof Carbon ? $dueDate : Carbon::parse($dueDate);
+
+        $this->sendSms(
+            $patient->phone ? [$patient->phone] : [],
+            $this->buildDueVlReminderMessage($patient, $date),
+            'vl_due_reminder',
+            $patient,
+            $actor,
+            [
+                'patient_id' => $patient->patient_id,
+                'due_date' => $date->toDateString(),
+            ],
+            true
+        );
+    }
+
+    public function sendDueEacReminder(Patient $patient, EACSession $session, ?User $actor = null): void
+    {
+        $this->sendSms(
+            $patient->phone ? [$patient->phone] : [],
+            $this->buildDueEacReminderMessage($patient, $session),
+            'eac_due_reminder',
+            $session,
+            $actor,
+            [
+                'patient_id' => $patient->patient_id,
+                'eac_id' => $session->eac_id,
+                'session_number' => $session->session_number,
+                'due_date' => Carbon::parse($session->session_date)->toDateString(),
+            ],
+            true
+        );
+    }
+
+    public function sendViralLoadResultMessage(ViralLoad $viralLoad, ?User $actor = null): void
+    {
+        $viralLoad->loadMissing('patient');
+        $patient = $viralLoad->patient;
+
+        if (! $patient) {
+            return;
+        }
+
+        $result = (float) ($viralLoad->result_cpml ?? 0);
+        $date = $viralLoad->result_date ? Carbon::parse($viralLoad->result_date) : Carbon::today();
+        $patientName = trim($patient->first_name . ' ' . $patient->last_name);
+        $isSuppressed = $result < 1000;
+
+        $message = $this->buildViralLoadResultMessage($viralLoad);
+
+        $this->sendSms(
+            $patient->phone ? [$patient->phone] : [],
+            $message,
+            $isSuppressed ? 'viral_load_result_suppressed' : 'viral_load_result_unsuppressed',
+            $viralLoad,
+            $actor,
+            [
+                'patient_id' => $patient->patient_id,
+                'vl_id' => $viralLoad->vl_id,
+                'result_cpml' => $result,
+                'result_date' => $date->toDateString(),
+            ],
+            true
+        );
+    }
+
+    public function buildAppointmentReminderMessage(Appointment $appointment): string
+    {
+        $appointment->loadMissing('patient');
+
+        return sprintf(
+            'ViLoCare reminder: %s has an appointment on %s.%s',
+            trim((string) optional($appointment->patient)->first_name . ' ' . (string) optional($appointment->patient)->last_name),
+            Carbon::parse($appointment->appointment_date)->format('d M Y'),
+            $appointment->reason ? ' Reason: ' . $appointment->reason : ''
+        );
+    }
+
+    public function buildDueVlReminderMessage(Patient $patient, Carbon|string $dueDate): string
+    {
+        $date = $dueDate instanceof Carbon ? $dueDate : Carbon::parse($dueDate);
+
+        return sprintf(
+            'ViLoCare reminder: %s is due for a repeat viral load visit on %s. Please return to the clinic for follow-up.',
+            trim($patient->first_name . ' ' . $patient->last_name),
+            $date->format('d M Y')
+        );
+    }
+
+    public function buildDueEacReminderMessage(Patient $patient, EACSession $session): string
+    {
+        return sprintf(
+            'ViLoCare reminder: %s is due for EAC session %s on %s. Please return to the clinic or contact your health care provider.',
+            trim($patient->first_name . ' ' . $patient->last_name),
+            $session->session_number,
+            Carbon::parse($session->session_date)->format('d M Y')
+        );
+    }
+
+    public function buildViralLoadResultMessage(ViralLoad $viralLoad): string
+    {
+        $viralLoad->loadMissing('patient');
+        $patient = $viralLoad->patient;
+
+        if (! $patient) {
+            return 'ViLoCare update: your viral load result is ready. Please contact the clinic for follow-up.';
+        }
+
+        $result = (float) ($viralLoad->result_cpml ?? 0);
+        $date = $viralLoad->result_date ? Carbon::parse($viralLoad->result_date) : Carbon::today();
+        $patientName = trim($patient->first_name . ' ' . $patient->last_name);
+
+        return $result < 1000
+            ? sprintf(
+                'ViLoCare update: Dear %s, your viral load result from %s is good and below 1000 cp/ml. Keep taking your medicine well and attend your routine clinic visits.',
+                $patientName,
+                $date->format('d M Y')
+            )
+            : sprintf(
+                'ViLoCare update: Dear %s, your viral load result from %s needs follow-up. Please return to the clinic or call your health care provider to discuss challenges with taking your medicine.',
+                $patientName,
+                $date->format('d M Y')
+            );
+    }
+
+    public function sendCustomSms(
+        string|array $recipients,
+        string $message,
+        string $category,
+        ?Model $notifiable,
+        ?User $actor,
+        array $context = [],
+        bool $preventDuplicateForToday = false
+    ): void {
+        $recipientList = is_array($recipients) ? $recipients : [$recipients];
+
+        $this->sendSms($recipientList, $message, $category, $notifiable, $actor, $context, $preventDuplicateForToday);
     }
 
     public function sendHighViralLoadAlert(ViralLoad $viralLoad, ?User $actor = null): void
@@ -190,7 +328,8 @@ class NotificationService
         string $category,
         ?Model $notifiable,
         ?User $actor,
-        array $context = []
+        array $context = [],
+        bool $preventDuplicateForToday = false
     ): void {
         if ($recipients === []) {
             $this->log('sms', $category, 'skipped', null, null, 'twilio', $message, $notifiable, $actor, $context + [
@@ -200,6 +339,22 @@ class NotificationService
         }
 
         foreach ($recipients as $recipient) {
+            if ($preventDuplicateForToday && $this->alreadySentToday((string) $recipient, $category, $context)) {
+                $this->log(
+                    'sms',
+                    $category,
+                    'skipped',
+                    (string) $recipient,
+                    null,
+                    'duplicate_guard',
+                    'Duplicate reminder skipped for today.',
+                    $notifiable,
+                    $actor,
+                    $context
+                );
+                continue;
+            }
+
             $result = $this->smsService->send((string) $recipient, $message);
 
             $this->log(
@@ -209,12 +364,45 @@ class NotificationService
                 (string) $recipient,
                 null,
                 $result['provider'] ?? 'twilio',
-                $result['detail'] ?? $message,
+                $message,
                 $notifiable,
                 $actor,
-                $context
+                $context + [
+                    'provider_detail' => $result['detail'] ?? null,
+                ]
             );
         }
+    }
+
+    private function alreadySentToday(string $recipient, string $category, array $context = []): bool
+    {
+        if (! Schema::hasTable('notification_logs')) {
+            return false;
+        }
+
+        $query = NotificationLog::query()
+            ->where('channel', 'sms')
+            ->where('category', $category)
+            ->where('recipient', $recipient)
+            ->whereDate('created_at', Carbon::today());
+
+        if (isset($context['patient_id'])) {
+            $query->where('context->patient_id', $context['patient_id']);
+        }
+
+        if (isset($context['due_date'])) {
+            $query->where('context->due_date', $context['due_date']);
+        }
+
+        if (isset($context['vl_id'])) {
+            $query->where('context->vl_id', $context['vl_id']);
+        }
+
+        if (isset($context['eac_id'])) {
+            $query->where('context->eac_id', $context['eac_id']);
+        }
+
+        return $query->exists();
     }
 
     private function log(

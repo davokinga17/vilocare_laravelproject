@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="{{ asset('css/theme.css') }}" rel="stylesheet" />
+    <link href="{{ asset('css/notification-center.css') }}" rel="stylesheet" />
     @stack('styles')
 </head>
 
@@ -25,6 +26,8 @@
                 <h1 class="topbar-title">@yield('page_title', 'Dashboard')</h1>
             </div>
             <div class="topbar-user">
+                @include('partials.notification-center')
+                @yield('topbar_actions')
                 <a href="{{ route('profile.edit') }}" class="user-chip text-decoration-none">
                     @if($currentUser && $currentUser->profilePhotoUrl())
                         <img src="{{ $currentUser->profilePhotoUrl() }}" alt="{{ $currentUser->name }}" style="width: 28px; height: 28px; border-radius: 999px; object-fit: cover;">
@@ -46,6 +49,15 @@
             @if(session('warning'))
                 <div class="alert alert-warning">
                     {{ session('warning') }}
+                </div>
+            @endif
+            @if($errors->any())
+                <div class="alert alert-danger">
+                    <ul class="mb-0 ps-3">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
             @yield('content')
@@ -80,6 +92,7 @@
         });
     })();
 </script>
+@include('partials.sms-compose-modal')
 @stack('scripts')
 
 </body>

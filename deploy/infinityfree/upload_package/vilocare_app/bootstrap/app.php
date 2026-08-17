@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
             'payments/*/mtn-momo/callback',
+            'payments/pesapal/ipn',
         ]);
 
         $middleware->alias([

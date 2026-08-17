@@ -10,11 +10,21 @@
                 <h2 class="h4 mb-2">Record Payment</h2>
                 <p class="text-muted mb-4">Capture a payment for an EAC consultation or a patient result request.</p>
 
-                @if(! $momoConfigured)
-                    <div class="alert alert-warning">
-                        <strong>MTN MoMo setup needed:</strong> add `MTN_MOMO_SUBSCRIPTION_KEY`, `MTN_MOMO_API_USER`, `MTN_MOMO_API_KEY`, and the other MTN MoMo environment values before using live MoMo requests.
+                @if($gatewaySimulationEnabled)
+                    <div class="alert alert-info">
+                        <strong>Local testing mode is enabled.</strong> MTN MoMo Pay will use the built-in simulator on localhost until you set <code>VILOCARE_SIMULATE_PAYMENT_GATEWAYS=false</code>.
                     </div>
                 @endif
+
+                <div class="alert alert-light border">
+                    <strong>Gateway readiness:</strong>
+                    <div class="small mt-2">
+                        MTN MoMo:
+                        <span class="{{ $gatewayConfig['mtn_momo'] ? 'text-success' : 'text-warning' }}">
+                            {{ $gatewayConfig['mtn_momo'] ? 'configured' : 'credentials needed' }}
+                        </span>
+                    </div>
+                </div>
 
                 @if($patient)
                     <div class="alert alert-info">
@@ -73,7 +83,7 @@
                         <div class="col-md-4">
                             <label for="payment_method" class="form-label">Payment Method</label>
                             <select name="payment_method" id="payment_method" class="form-select" required>
-                                @foreach(['manual' => 'Manual Entry', 'cash' => 'Cash', 'mtn_momo' => 'MTN MoMo', 'bank' => 'Bank'] as $value => $label)
+                                @foreach($paymentMethodOptions as $value => $label)
                                     <option value="{{ $value }}" @selected(old('payment_method', $defaults['payment_method']) === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
@@ -92,7 +102,7 @@
                         </div>
                         <div class="col-md-6 d-none" id="paymentPhoneField">
                             <label for="payment_phone" class="form-label">MTN MoMo Number</label>
-                            <input type="text" name="payment_phone" id="payment_phone" class="form-control" value="{{ old('payment_phone') }}" placeholder="e.g. +2119XXXXXXXX">
+                            <input type="text" name="payment_phone" id="payment_phone" class="form-control" value="{{ old('payment_phone', $patient?->phone) }}" placeholder="e.g. +2119XXXXXXXX">
                             <div class="form-text">Enter the customer number in international format when possible. The patient will receive a prompt on their phone.</div>
                         </div>
                         <div class="col-12 d-none" id="momoNotice">
@@ -139,16 +149,25 @@
 
         function syncPaymentForm() {
             var isMomo = paymentMethod.value === 'mtn_momo';
+            var isGateway = isMomo;
 
-            statusField.classList.toggle('d-none', isMomo);
-            paidAtField.classList.toggle('d-none', isMomo);
+            statusField.classList.toggle('d-none', isGateway);
+            paidAtField.classList.toggle('d-none', isGateway);
             paymentPhoneField.classList.toggle('d-none', !isMomo);
             momoNotice.classList.toggle('d-none', !isMomo);
 
-            if (isMomo) {
+            if (isGateway) {
                 statusInput.value = 'pending';
                 paidAtInput.value = '';
+            }
+
+            if (isMomo) {
+                var currencyInput = document.getElementById('currency');
+                if (currencyInput) {
+                    currencyInput.value = 'EUR';
+                }
                 submitButton.textContent = 'Start MTN MoMo Request';
+                momoNotice.querySelector('.alert').innerHTML = 'MTN MoMo sandbox uses <strong>EUR</strong>. On localhost, ViLoCare will skip the callback header and you can use <strong>Refresh Gateway Status</strong> after the customer approves the request.';
             } else {
                 submitButton.textContent = 'Save Payment';
             }
